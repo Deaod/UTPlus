@@ -1,0 +1,13 @@
+*.old
+*.old2
+*.uc_ig
+*.uc_nn
+
+*.sublime-workspace
+
+make.ini
+PostBuildHook.bat
+
+/Build/Temp/**/*
+/System/**/*
+!/System/**/InstaGibPlus*.int
