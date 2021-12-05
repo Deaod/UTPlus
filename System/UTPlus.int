@@ -1,0 +1,6 @@
+[Public]
+Object=(Name=UTPlus.UTPlus,Class=Class,MetaClass=Engine.Mutator,Description="UTPlus,NextGen UT Feeling")
+
+[UTPlusPlayer]
+MenuName="Male Commando"
+

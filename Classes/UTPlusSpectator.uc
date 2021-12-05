@@ -1,1 +1,1 @@
-class UTPlusSpectator extends CHSpectator;
+class UTPlusSpectator extends Botpack.CHSpectator;

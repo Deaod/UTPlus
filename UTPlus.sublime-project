@@ -16,7 +16,7 @@
 	"build_systems":
 	[
 		{
-			"name": "Build IG+",
+			"name": "Build UT+",
 			"file_patterns": ["*.uc"],
 			"cmd": ["$project_path/build.bat"]
 		}

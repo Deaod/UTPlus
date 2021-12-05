@@ -65,27 +65,26 @@ exit /B 1
     call :GenerateMakeIniPostscript %1
 exit /B %ERRORLEVEL%
 
-::
 :GenerateMakeIniPreamble
-    echo ; Generated                      >  %1
-    echo.                                 >> %1
-    echo [Engine.Engine]                  >> %1
-    echo EditorEngine=Editor.EditorEngine >> %1
-    echo.                                 >> %1
-    echo [Editor.EditorEngine]            >> %1
-    echo CacheSizeMegs=32                 >> %1
+    echo ; Generated>%1
+    echo.>>%1
+    echo [Engine.Engine]>>%1
+    echo EditorEngine=Editor.EditorEngine>>%1
+    echo.>>%1
+    echo [Editor.EditorEngine]>>%1
+    echo CacheSizeMegs=32>>%1
 exit /B %ERRORLEVEL%
 
 :GenerateMakeIniPostscript
-    echo.                        >> %1
-    echo [Core.System]           >> %1
-    echo Paths=*.u               >> %1
-    echo Paths=../Maps/*.unr     >> %1
-    echo Paths=../Textures/*.utx >> %1
-    echo Paths=../Sounds/*.uax   >> %1
-    echo Paths=../Music/*.umx    >> %1
+    echo.>>%1
+    echo [Core.System]>>%1
+    echo Paths=*.u>>%1
+    echo Paths=../Maps/*.unr>>%1
+    echo Paths=../Textures/*.utx>>%1
+    echo Paths=../Sounds/*.uax>>%1
+    echo Paths=../Music/*.umx>>%1
 exit /B %ERRORLEVEL%
 
 :GenerateMakeIniDependency
-    echo EditPackages=%2 >> %1
+    echo EditPackages=%2>>%1
 exit /B %ERRORLEVEL%
