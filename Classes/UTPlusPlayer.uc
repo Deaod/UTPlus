@@ -6,6 +6,14 @@ var bool UTPlus_Is469Server;
 var float UTPlus_AccumulatedHTurn;
 var float UTPlus_AccumulatedVTurn;
 
+var EPhysics UTPlus_OldPhysics;
+var float UTPlus_OldZ;
+var bool UTPlus_bForceZSmoothing;
+var int UTPlus_IgnoreZChangeTicks;
+var float UTPlus_OldShakeVert;
+var float UTPlus_OldBaseEyeHeight;
+var float UTPlus_EyeHeightOffset;
+
 replication {
 	unreliable if ( bNetOwner && Role == ROLE_Authority )
 		UTPlus_Is469Server;
@@ -44,8 +52,78 @@ event Possess() {
 	}
 }
 
+simulated event Touch(Actor Other) {
+	if (Other.IsA('Teleporter'))
+		UTPlus_IgnoreZChangeTicks = 2;
+	super.Touch(Other);
+}
+
+function ClientReStart() {
+	super.ClientReStart();
+	
+	UTPlus_IgnoreZChangeTicks = 1;
+}
+
 event ServerTick(float DeltaTime) {
 
+}
+
+event UpdateEyeHeight(float DeltaTime) {
+	local float DeltaZ;
+
+	// smooth up/down stairs, landing, dont smooth ramps
+	if ((Physics == PHYS_Walking && bJustLanded == false) ||
+		// Smooth out stepping up onto unwalkable ramps
+		(UTPlus_OldPhysics == PHYS_Walking && Physics == PHYS_Falling)
+	) {
+		DeltaZ = Location.Z - UTPlus_OldZ;
+
+		// remove lifts from the equation.
+		if (Base != none)
+			DeltaZ -= DeltaTime * Base.Velocity.Z;
+
+		// stair detection heuristic
+		if (UTPlus_IgnoreZChangeTicks == 0 && (Abs(DeltaZ) > DeltaTime * GroundSpeed || UTPlus_bForceZSmoothing))
+			UTPlus_EyeHeightOffset += FClamp(DeltaZ, -MaxStepHeight, MaxStepHeight);
+		UTPlus_bForceZSmoothing = false;
+	} else if (bJustLanded) {
+		// Always smooth out landing, because you apparently are not considered
+		// to have landed until you penetrate the ground by at least 1% of Velocity.Z.
+		UTPlus_bForceZSmoothing = true;
+	}
+
+	if (UTPlus_IgnoreZChangeTicks > 0) UTPlus_IgnoreZChangeTicks--;
+	bJustLanded = false;
+	UTPlus_OldPhysics = Physics;
+	UTPlus_OldZ = Location.Z;
+
+	UTPlus_EyeHeightOffset += ShakeVert - UTPlus_OldShakeVert;
+	UTPlus_OldShakeVert = ShakeVert;
+
+	UTPlus_EyeHeightOffset += BaseEyeHeight - UTPlus_OldBaseEyeHeight;
+	UTPlus_OldBaseEyeHeight = BaseEyeHeight;
+
+	UTPlus_EyeHeightOffset = UTPlus_EyeHeightOffset * Exp(-9.0 * DeltaTime);
+	EyeHeight = ShakeVert + BaseEyeHeight - UTPlus_EyeHeightOffset;
+
+	// if (Settings.bSmoothFOVChanges) {
+	// 	// The following events change your FOV:
+	// 	//   - Spawning
+	// 	//   - Zooming with Sniper Rifle
+	// 	//   - Teleporters
+	// 	// This smooths out FOV changes so they arent as jarring
+	// 	FOVAngle = DesiredFOV - (Exp(-9.0 * DeltaTime) * (DesiredFOV-FOVAngle));
+	// } else {
+		FOVAngle = DesiredFOV;
+	// }
+
+	// adjust FOV for weapon zooming
+	if (bZooming) {
+		ZoomLevel += DeltaTime * 1.0;
+		if (ZoomLevel > 0.9)
+			ZoomLevel = 0.9;
+		DesiredFOV = FClamp(90.0 - (ZoomLevel * 88.0), 1, 170);
+	}
 }
 
 final function UTPlus_ReplicateMove(float DeltaTime, vector Accel, EDodgeDir DodgeMove, rotator RotDelta) {
