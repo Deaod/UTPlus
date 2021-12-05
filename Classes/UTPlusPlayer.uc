@@ -14,6 +14,8 @@ var float UTPlus_OldShakeVert;
 var float UTPlus_OldBaseEyeHeight;
 var float UTPlus_EyeHeightOffset;
 
+var PlayerPawn UTPlus_LocalPlayer;
+
 var UTPlus_ClientSettings Settings;
 var Object SettingsHelper;
 
@@ -41,6 +43,26 @@ static final function int RotS2U(int R) {
 
 static final function int RotU2S(int R) {
 	return ((R << 16) >> 16);
+}
+
+simulated final function PlayerPawn GetLocalPlayer() {
+	local PlayerPawn P;
+
+	if (UTPlus_LocalPlayer != none) {
+		return UTPlus_LocalPlayer;
+	}
+
+	if (Level == none || Level.NetMode == NM_DedicatedServer)
+		return none;
+
+	foreach AllActors(class'PlayerPawn', P) {
+		if (P.Player != none && P.Player.IsA('Viewport')) {
+			UTPlus_LocalPlayer = P;
+			return P;
+		}
+	}
+
+	return none;
 }
 
 simulated final function UTPlus_InitSettings() {
