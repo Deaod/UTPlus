@@ -607,6 +607,8 @@ function PlayInAir() {
 		TweenAnim('JumpLGFR', TweenTime); 
 }
 
+// Copied from TournamentMale
+
 function PlayDying(name DamageType, vector HitLoc) {
 	BaseEyeHeight = Default.BaseEyeHeight;
 	PlayDyingSound();
@@ -710,6 +712,8 @@ function PlayRightHit(float tweentime) {
 	else
 		TweenAnim('Dead1', tweentime);
 }
+
+// End of Copy
 
 static function SetMultiSkin(Actor SkinActor, string SkinName, string FaceName, byte TeamNum) {
 	// forcibly use the default skins
