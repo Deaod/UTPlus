@@ -60,7 +60,7 @@ simulated event Touch(Actor Other) {
 
 function ClientReStart() {
 	super.ClientReStart();
-	
+
 	UTPlus_IgnoreZChangeTicks = 1;
 }
 
@@ -619,7 +619,7 @@ static function SetMultiSkin(Actor SkinActor, string SkinName, string FaceName, 
 	super.SetMultiSkin(
 		SkinActor,
 		default.DefaultSkinName,
-		default.DefaultSkinName$string(default.FaceSkin),
+		"CommandoSkins.Blake",
 		TeamNum
 	);
 }
