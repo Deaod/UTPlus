@@ -155,16 +155,10 @@ event UpdateEyeHeight(float DeltaTime) {
 	UTPlus_EyeHeightOffset = UTPlus_EyeHeightOffset * Exp(-9.0 * DeltaTime);
 	EyeHeight = ShakeVert + BaseEyeHeight - UTPlus_EyeHeightOffset;
 
-	// if (Settings.bSmoothFOVChanges) {
-	// 	// The following events change your FOV:
-	// 	//   - Spawning
-	// 	//   - Zooming with Sniper Rifle
-	// 	//   - Teleporters
-	// 	// This smooths out FOV changes so they arent as jarring
-	// 	FOVAngle = DesiredFOV - (Exp(-9.0 * DeltaTime) * (DesiredFOV-FOVAngle));
-	// } else {
-		FOVAngle = DesiredFOV;
-	// }
+	// The following events change your FOV:
+	//   - Spawning
+	//   - Zooming with Sniper Rifle
+	//   - Teleporters
 
 	// adjust FOV for weapon zooming
 	if (bZooming) {
@@ -173,6 +167,8 @@ event UpdateEyeHeight(float DeltaTime) {
 			ZoomLevel = 0.9;
 		DesiredFOV = FClamp(90.0 - (ZoomLevel * 88.0), 1, 170);
 	}
+
+	FOVAngle = DesiredFOV;
 }
 
 function ClientReStart() {
