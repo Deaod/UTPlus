@@ -680,6 +680,8 @@ static function SetMultiSkin(Actor SkinActor, string SkinName, string FaceName, 
 }
 
 defaultproperties {
+	bAlwaysRelevant=True
+
 	Drown=Botpack.MaleSounds.drownM02
 	BreathAgain=Botpack.MaleSounds.gasp02
 	HitSound3=Botpack.MaleSounds.injurM04
