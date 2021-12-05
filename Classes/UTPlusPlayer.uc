@@ -113,12 +113,6 @@ simulated event Touch(Actor Other) {
 	super.Touch(Other);
 }
 
-function ClientReStart() {
-	super.ClientReStart();
-
-	UTPlus_IgnoreZChangeTicks = 1;
-}
-
 event ServerTick(float DeltaTime) {
 
 }
@@ -179,6 +173,12 @@ event UpdateEyeHeight(float DeltaTime) {
 			ZoomLevel = 0.9;
 		DesiredFOV = FClamp(90.0 - (ZoomLevel * 88.0), 1, 170);
 	}
+}
+
+function ClientReStart() {
+	super.ClientReStart();
+
+	UTPlus_IgnoreZChangeTicks = 1;
 }
 
 final function UTPlus_ReplicateMove(float DeltaTime, vector Accel, EDodgeDir DodgeMove, rotator RotDelta) {
