@@ -14,6 +14,9 @@ var float UTPlus_OldShakeVert;
 var float UTPlus_OldBaseEyeHeight;
 var float UTPlus_EyeHeightOffset;
 
+var UTPlus_ClientSettings Settings;
+var Object SettingsHelper;
+
 replication {
 	unreliable if ( bNetOwner && Role == ROLE_Authority )
 		UTPlus_469Server;
@@ -40,6 +43,34 @@ static final function int RotU2S(int R) {
 	return ((R << 16) >> 16);
 }
 
+simulated final function UTPlus_InitSettings() {
+	local UTPlusPlayer P;
+	local UTPlusSpectator S;
+
+	foreach AllActors(class'UTPlusPlayer', P) {
+		if (P.Settings != none) {
+			Settings = P.Settings;
+			return;
+		}
+	}
+
+	foreach AllActors(class'UTPlusSpectator', S) {
+		if (S.Settings != none) {
+			Settings = S.Settings;
+			return;
+		}
+	}
+
+	SettingsHelper = new(none, 'UTPlus') class'Object';
+	Settings = new(SettingsHelper, 'ClientSettings') class'UTPlus_ClientSettings';
+}
+
+simulated event PostBeginPlay() {
+	super.PostBeginPlay();
+
+	UTPlus_InitSettings();
+}
+
 event Possess() {
 	super.Possess();
 
@@ -50,6 +81,8 @@ event Possess() {
 		if (RemoteRole != ROLE_AutonomousProxy)
 			UTPlus_469Client = UTPlus_469Server;
 	}
+
+	UTPlus_InitSettings();
 }
 
 simulated event Touch(Actor Other) {
