@@ -1,14 +1,14 @@
 class UTPlusPlayer extends Botpack.TournamentPlayer;
 
-var bool UTPlus_Is469Client;
-var bool UTPlus_Is469Server;
+var bool UTPlus_469Client;
+var bool UTPlus_469Server;
 
 var float UTPlus_AccumulatedHTurn;
 var float UTPlus_AccumulatedVTurn;
 
 var EPhysics UTPlus_OldPhysics;
 var float UTPlus_OldZ;
-var bool UTPlus_bForceZSmoothing;
+var bool UTPlus_ForceZSmoothing;
 var int UTPlus_IgnoreZChangeTicks;
 var float UTPlus_OldShakeVert;
 var float UTPlus_OldBaseEyeHeight;
@@ -16,10 +16,10 @@ var float UTPlus_EyeHeightOffset;
 
 replication {
 	unreliable if ( bNetOwner && Role == ROLE_Authority )
-		UTPlus_Is469Server;
+		UTPlus_469Server;
 
 	unreliable if ( Role == ROLE_AutonomousProxy || RemoteRole <= ROLE_SimulatedProxy )
-		UTPlus_Is469Client;
+		UTPlus_469Client;
 }
 
 static final operator(34) int or_eq (out int A, int B) {
@@ -44,11 +44,11 @@ event Possess() {
 	super.Possess();
 
 	if (Level.NetMode == NM_Client) {
-		UTPlus_Is469Client = int(Level.EngineVersion) >= 469;
+		UTPlus_469Client = int(Level.EngineVersion) >= 469;
 	} else {
-		UTPlus_Is469Server = int(Level.EngineVersion) >= 469;
+		UTPlus_469Server = int(Level.EngineVersion) >= 469;
 		if (RemoteRole != ROLE_AutonomousProxy)
-			UTPlus_Is469Client = UTPlus_Is469Server;
+			UTPlus_469Client = UTPlus_469Server;
 	}
 }
 
@@ -83,13 +83,13 @@ event UpdateEyeHeight(float DeltaTime) {
 			DeltaZ -= DeltaTime * Base.Velocity.Z;
 
 		// stair detection heuristic
-		if (UTPlus_IgnoreZChangeTicks == 0 && (Abs(DeltaZ) > DeltaTime * GroundSpeed || UTPlus_bForceZSmoothing))
+		if (UTPlus_IgnoreZChangeTicks == 0 && (Abs(DeltaZ) > DeltaTime * GroundSpeed || UTPlus_ForceZSmoothing))
 			UTPlus_EyeHeightOffset += FClamp(DeltaZ, -MaxStepHeight, MaxStepHeight);
-		UTPlus_bForceZSmoothing = false;
+		UTPlus_ForceZSmoothing = false;
 	} else if (bJustLanded) {
 		// Always smooth out landing, because you apparently are not considered
 		// to have landed until you penetrate the ground by at least 1% of Velocity.Z.
-		UTPlus_bForceZSmoothing = true;
+		UTPlus_ForceZSmoothing = true;
 	}
 
 	if (UTPlus_IgnoreZChangeTicks > 0) UTPlus_IgnoreZChangeTicks--;
@@ -142,10 +142,10 @@ final function UTPlus_UpdateRotation(float DeltaTime, float maxPitch) {
 
 	DesiredRotation = ViewRotation; //save old rotation
 
-	ViewRotation.Pitch += UTPlus_AccumulatedPlayerTurn( 32.0 * DeltaTime * aLookUp, UTPlus_AccumulatedVTurn);
+	ViewRotation.Pitch += UTPlus_AccumulatedPlayerTurn(32.0 * DeltaTime * aLookUp, UTPlus_AccumulatedVTurn);
 	ViewRotation.Pitch = RotS2U(Clamp(RotU2S(ViewRotation.Pitch), -16384, 16383));
 
-	ViewRotation.Yaw += UTPlus_AccumulatedPlayerTurn( 32.0 * DeltaTime * aTurn, UTPlus_AccumulatedHTurn);
+	ViewRotation.Yaw += UTPlus_AccumulatedPlayerTurn(32.0 * DeltaTime * aTurn, UTPlus_AccumulatedHTurn);
 
 	ViewShake(deltaTime);
 	ViewFlash(deltaTime);
