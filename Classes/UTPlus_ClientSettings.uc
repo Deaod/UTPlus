@@ -1,6 +1,5 @@
-class UTPlus_ClientSettings extends Object;
-
-var bool bSmoothFOVChanges;
+class UTPlus_ClientSettings extends Object
+	config(UTPlus) perobjectconfig;
 
 event Spawned() {
 }
@@ -11,9 +10,8 @@ function string GetSettingValue(string Key) {
 
 function string ToString() {
 	return "Client Settings:\n"$
-		GetSettingValue("bSmoothFOVChanges");
+		"";
 }
 
 defaultproperties {
-	bSmoothFOVChanges=False
 }
