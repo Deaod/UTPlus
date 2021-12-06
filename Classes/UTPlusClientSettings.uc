@@ -1,4 +1,4 @@
-class UTPlus_ClientSettings extends Object
+class UTPlusClientSettings extends Object
 	config(UTPlus) perobjectconfig;
 
 event Spawned() {
