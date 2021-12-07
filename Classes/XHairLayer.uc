@@ -26,26 +26,22 @@ event Spawned() {
 	}
 }
 
-function Draw(Canvas C) {
-	local float X, Y;
+function Draw(Canvas C, float Scale) {
 	local float XLength, YLength;
-
-	X = C.ClipX / 2;
-	Y = C.ClipY / 2;
 
 	if (bUse == false)
 		return;
 
 	class'CanvasUtils'.static.SaveCanvas(C);
 
-	XLength = ScaleX * DrawTex.USize;
-	YLength = ScaleY * DrawTex.VSize;
+	XLength = Scale * ScaleX * DrawTex.USize;
+	YLength = Scale * ScaleY * DrawTex.VSize;
 	C.Style = Style;
 
 	C.bNoSmooth = (bSmooth == false);
 	C.SetPos(
-		X - 0.5 * XLength + OffsetX,
-		Y - 0.5 * YLength + OffsetY);
+		(C.ClipX - XLength) * 0.5 + Scale * OffsetX,
+		(C.ClipY - YLength) * 0.5 + Scale * OffsetY);
 	C.DrawColor = Color;
 	C.DrawTile(DrawTex, XLength, YLength, 0, 0, DrawTex.USize, DrawTex.VSize);
 
