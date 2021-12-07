@@ -1,6 +1,6 @@
 class UTPlusSpectator extends Botpack.CHSpectator;
 
-var UTPlus_ClientSettings Settings;
+var UTPlusClientSettings Settings;
 var Object SettingsHelper;
 
 simulated final function UTPlus_InitSettings() {
@@ -22,7 +22,7 @@ simulated final function UTPlus_InitSettings() {
 	}
 
 	SettingsHelper = new(none, 'UTPlus') class'Object';
-	Settings = new(SettingsHelper, 'ClientSettings') class'UTPlus_ClientSettings';
+	Settings = new(SettingsHelper, 'ClientSettings') class'UTPlusClientSettings';
 }
 
 simulated event PostBeginPlay() {

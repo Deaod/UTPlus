@@ -16,7 +16,7 @@ var float UTPlus_EyeHeightOffset;
 
 var PlayerPawn UTPlus_LocalPlayer;
 
-var UTPlus_ClientSettings Settings;
+var UTPlusClientSettings Settings;
 var Object SettingsHelper;
 
 replication {
@@ -84,7 +84,7 @@ simulated final function UTPlus_InitSettings() {
 	}
 
 	SettingsHelper = new(none, 'UTPlus') class'Object';
-	Settings = new(SettingsHelper, 'ClientSettings') class'UTPlus_ClientSettings';
+	Settings = new(SettingsHelper, 'ClientSettings') class'UTPlusClientSettings';
 }
 
 simulated event PostBeginPlay() {
