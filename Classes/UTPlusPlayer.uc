@@ -134,10 +134,8 @@ function actor TraceShot(out vector HitLocation, out vector HitNormal, vector En
 	foreach TraceActors( class'Actor', A, HitLocation, HitNormal, EndTrace, StartTrace) {
 		if (A.IsA('UTPlusDummy')) {
 			D = UTPlusDummy(A);
-			if ((D.Actual != self) && D.AdjustHitLocation(HitLocation, EndTrace - StartTrace)) {
+			if ((D.Actual != self) && D.AdjustHitLocation(HitLocation, EndTrace - StartTrace))
 				Other = D.Actual;
-				ClientMessage("CompHit");
-			}
 		} else if (Pawn(A) != None) {
 			if ((A != self) && Pawn(A).AdjustHitLocation( HitLocation, EndTrace - StartTrace))
 				Other = A;
@@ -626,7 +624,7 @@ state GameEnded {
 			aTurn    *= 0.24;
 			ViewRotation.Yaw += UTPlus_AccumulatedPlayerTurn( 32.0 * DeltaTime * aTurn, UTPlus_AccumulatedHTurn);
 			ViewRotation.Pitch += UTPlus_AccumulatedPlayerTurn( 32.0 * DeltaTime * aLookUp, UTPlus_AccumulatedVTurn);
-			ViewRotation.Pitch = Clamp(ViewRotation.Pitch << 16 >> 16, -16384, 16383);
+			ViewRotation.Pitch = RotS2U(Clamp(RotU2S(ViewRotation.Pitch), -16384, 16383));
 		} else if ( ViewTarget != None ) {
 			ViewRotation = ViewTarget.Rotation;
 		}
