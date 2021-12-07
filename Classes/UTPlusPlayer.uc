@@ -1,5 +1,7 @@
 class UTPlusPlayer extends Botpack.TournamentPlayer;
 
+var UTPlus MutUTPlus;
+
 var bool UTPlus_469Client;
 var bool UTPlus_469Server;
 
@@ -91,6 +93,9 @@ simulated event PostBeginPlay() {
 	super.PostBeginPlay();
 
 	UTPlus_InitSettings();
+
+	foreach AllActors(class'UTPlus', MutUTPlus)
+		break;
 }
 
 event Possess() {
@@ -115,6 +120,37 @@ simulated event Touch(Actor Other) {
 
 event ServerTick(float DeltaTime) {
 
+}
+
+function actor TraceShot(out vector HitLocation, out vector HitNormal, vector EndTrace, vector StartTrace) {
+	local Actor A, Other;
+	local UTPlusDummy D;
+	
+	if (Role != ROLE_Authority)
+		return super.TraceShot(HitLocation, HitNormal, EndTrace, StartTrace);
+
+	MutUTPlus.CompensateFor(PlayerReplicationInfo.Ping);
+
+	foreach TraceActors( class'Actor', A, HitLocation, HitNormal, EndTrace, StartTrace) {
+		if (A.IsA('UTPlusDummy')) {
+			D = UTPlusDummy(A);
+			if ((D.Actual != self) && D.AdjustHitLocation(HitLocation, EndTrace - StartTrace)) {
+				Other = D.Actual;
+				ClientMessage("CompHit");
+			}
+		} else if (Pawn(A) != None) {
+			if ((A != self) && Pawn(A).AdjustHitLocation( HitLocation, EndTrace - StartTrace))
+				Other = A;
+		} else if ((A == Level) || (Mover(A) != None) || A.bProjTarget || (A.bBlockPlayers && A.bBlockActors)) {
+			Other = A;
+		}
+
+		if (Other != None)
+			break;
+	}
+
+	MutUTPlus.EndCompensation();
+	return Other;
 }
 
 // UpdateEyeHeight controls the EyeHeight property of a Pawn.
