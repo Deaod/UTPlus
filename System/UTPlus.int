@@ -1,4 +1,5 @@
 [Public]
+Object=(Name=UTPlus.MutXHairFactory,Class=Class,MetaClass=Engine.Mutator,Description="XHair Factory,Allows drawing of arbitrary crosshairs")
 Object=(Name=UTPlus.UTPlus,Class=Class,MetaClass=Engine.Mutator,Description="UTPlus,NextGen UT Feeling")
 
 [UTPlusPlayer]
