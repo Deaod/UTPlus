@@ -171,6 +171,13 @@ event UpdateEyeHeight(float DeltaTime) {
 	FOVAngle = DesiredFOV;
 }
 
+event PlayerInput(float DeltaTime) {
+	if (Abs(aBaseY)  < 1) aBaseY  = 0;
+	if (Abs(aStrafe) < 1) aStrafe = 0;
+
+	super.PlayerInput(DeltaTime);
+}
+
 function ClientReStart() {
 	super.ClientReStart();
 
