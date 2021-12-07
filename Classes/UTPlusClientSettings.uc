@@ -2,6 +2,7 @@ class UTPlusClientSettings extends Object
 	config(UTPlus) perobjectconfig;
 
 event Spawned() {
+	SaveConfig();
 }
 
 function string GetSettingValue(string Key) {
