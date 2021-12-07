@@ -150,7 +150,10 @@ event ServerTick(float DeltaTime) {
 //   - 'a' was experimentally determined to work best at 9
 //   - This has the nice property of being independent of varying DeltaTime
 // 
-// Additionally, the function also handles FOV changes.
+// EyeHeight is then used in PlayerCalcView to determine the CameraLocation, as
+// an offset in Z direction from the Pawns Location.
+// 
+// Additionally, this function also handles FOV changes.
 // Well, not anymore, it turns out players dislike smooth FOV changes. 
 event UpdateEyeHeight(float DeltaTime) {
 	local float DeltaZ;
@@ -207,6 +210,9 @@ event UpdateEyeHeight(float DeltaTime) {
 }
 
 event PlayerInput(float DeltaTime) {
+	// The following lines prevent tiny values in aBaseY and aStrafe that are
+	// not == 0.0 from being detected as dodging on UT v468 and earlier.
+	// v469 fixes this by moving from x87 floating point instructions to SSE2.
 	if (Abs(aBaseY)  < 1) aBaseY  = 0;
 	if (Abs(aStrafe) < 1) aStrafe = 0;
 
@@ -607,6 +613,8 @@ function PlayInAir() {
 	local vector X,Y,Z, Dir;
 	local float f, TweenTime;
 
+	// This change in BaseEyeHeight is removed to avoid players feeling like
+	// they've hit their head on a ceiling with every dodge/jump.
 	//BaseEyeHeight =  0.7 * Default.BaseEyeHeight;
 
 	if ( (GetAnimGroup(AnimSequence) == 'Landing') && !bLastJumpAlt ) {
