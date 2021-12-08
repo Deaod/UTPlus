@@ -1,5 +1,5 @@
 class XHairLayer extends Object
-	config perobjectconfig;
+	config(XHairFactory) perobjectconfig;
 
 // 1x1 white texture as base for painting crosshairs
 #exec Texture Import File=Textures\XHairBase.pcx Name=XHairBase Mips=Off

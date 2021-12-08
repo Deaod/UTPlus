@@ -1,5 +1,5 @@
 class XHairSettings extends Object
-	config perobjectconfig;
+	config(XHairFactory) perobjectconfig;
 
 var bool bEnabled;
 
