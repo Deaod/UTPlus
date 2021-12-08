@@ -56,6 +56,7 @@ endlocal
 exit /B 1
 
 :GenerateMakeIni
+    if not exist %1 mkdir %~dp1
     call :GenerateMakeIniPreamble %1
 
     :GenerateMakeIniNextDependency
