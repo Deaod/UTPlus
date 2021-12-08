@@ -122,24 +122,23 @@ function CompEnd() {
 	}
 }
 
-simulated function bool AdjustHitLocation(out vector HitLocation, vector TraceDir)
-{
+simulated function bool AdjustHitLocation(out vector HitLocation, vector TraceDir) {
 	local float adjZ, maxZ;
 
 	TraceDir = Normal(TraceDir);
 	HitLocation = HitLocation + 0.5 * CollisionRadius * TraceDir;
-	if ( BaseEyeHeight == Actual.Default.BaseEyeHeight )
+	if (BaseEyeHeight == Actual.Default.BaseEyeHeight)
 		return true;
 
 	maxZ = Location.Z + EyeHeight + 0.25 * CollisionHeight;
-	if ( HitLocation.Z > maxZ )	{
-		if ( TraceDir.Z >= 0 )
+	if (HitLocation.Z > maxZ)	{
+		if (TraceDir.Z >= 0)
 			return false;
 		adjZ = (maxZ - HitLocation.Z)/TraceDir.Z;
 		HitLocation.Z = maxZ;
 		HitLocation.X = HitLocation.X + TraceDir.X * adjZ;
 		HitLocation.Y = HitLocation.Y + TraceDir.Y * adjZ;
-		if ( VSize(vect(1,1,0) * (HitLocation - Location)) > CollisionRadius )
+		if (VSize(vect(1,1,0) * (HitLocation - Location)) > CollisionRadius)
 			return false;
 	}
 	return true;
