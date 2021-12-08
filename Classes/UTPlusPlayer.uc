@@ -122,6 +122,29 @@ event ServerTick(float DeltaTime) {
 
 }
 
+simulated function bool AdjustHitLocation(out vector HitLocation, vector TraceDir) {
+	local float adjZ, maxZ;
+
+	TraceDir = Normal(TraceDir);
+	HitLocation = HitLocation + 0.5 * CollisionRadius * TraceDir;
+	if ( BaseEyeHeight == Default.BaseEyeHeight )
+		return true;
+
+	maxZ = Location.Z + EyeHeight + 0.25 * CollisionHeight;
+	if (HitLocation.Z > maxZ)	{
+		if (TraceDir.Z >= 0)
+			return false;
+		adjZ = (maxZ - HitLocation.Z)/TraceDir.Z;
+		HitLocation.Z = maxZ;
+		HitLocation.X = HitLocation.X + TraceDir.X * adjZ;
+		HitLocation.Y = HitLocation.Y + TraceDir.Y * adjZ;
+		if (VSize(vect(1,1,0) * (HitLocation - Location)) > CollisionRadius)
+			return false;
+	}
+	return true;
+}
+
+
 function actor TraceShot(out vector HitLocation, out vector HitNormal, vector EndTrace, vector StartTrace) {
 	local Actor A, Other;
 	local UTPlusDummy D;
