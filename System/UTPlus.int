@@ -1,6 +1,8 @@
 [Public]
 Object=(Name=UTPlus.MutXHairFactory,Class=Class,MetaClass=Engine.Mutator,Description="XHair Factory,Allows drawing of arbitrary crosshairs")
 Object=(Name=UTPlus.UTPlus,Class=Class,MetaClass=Engine.Mutator,Description="UTPlus,NextGen UT Feeling")
+Object=(Name=UTPlus.MutIGEnhanced,Class=Class,MetaClass=Engine.Mutator,Description="IG Enhanced,InstaGib with more polished mechanics")
+Object=(Name=UTPlus.IGEnhancedRifle,Class=Class,MetaClass=Engine.Weapon)
 
 [UTPlusPlayer]
 MenuName="Male Commando"
