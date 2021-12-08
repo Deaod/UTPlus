@@ -64,10 +64,12 @@ function CompStart(int Ping) {
 	TargetTimeStamp = Level.TimeSeconds - 0.0005*Ping;
 
 	I = DataIndex - 1;
+	if (I < 0)
+		I += arraycount(Data);
 	do {
 		Next = I - 1;
 		if (Next < 0)
-			Next -= arraycount(Data);
+			Next += arraycount(Data);
 
 		if (Data[I].ServerTimeStamp <= TargetTimeStamp) {
 			CompSwap(
