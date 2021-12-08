@@ -2,6 +2,7 @@ class UTPlus extends Engine.Mutator
     config(UTPlus);
 
 var config bool bEnablePingCompensation;
+
 var UTPlusDummy CompDummies;
 
 function ModifyLogin(
