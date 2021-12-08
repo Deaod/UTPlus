@@ -87,6 +87,7 @@ simulated final function UTPlus_InitSettings() {
 
 	SettingsHelper = new(none, 'UTPlus') class'Object';
 	Settings = new(SettingsHelper, 'ClientSettings') class'UTPlusClientSettings';
+	Settings.Initialize();
 }
 
 simulated event PostBeginPlay() {

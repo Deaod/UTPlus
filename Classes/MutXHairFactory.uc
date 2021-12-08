@@ -37,6 +37,7 @@ simulated final function InitSettings() {
 
 	SettingsHelper = new(none, 'XHairFactory') class'Object';
 	Settings = new(SettingsHelper, 'Settings') class'XHairSettings';
+	Settings.Initialize();
 
 	L = new(SettingsHelper) class'XHairLayer';
 	if (L.bUse == false)

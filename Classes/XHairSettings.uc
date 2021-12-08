@@ -3,7 +3,7 @@ class XHairSettings extends Object
 
 var bool bEnabled;
 
-event Spawned() {
+function Initialize() {
 	SaveConfig();
 }
 

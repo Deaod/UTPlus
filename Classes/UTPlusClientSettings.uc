@@ -1,7 +1,7 @@
 class UTPlusClientSettings extends Object
 	config(UTPlus) perobjectconfig;
 
-event Spawned() {
+event Initialize() {
 	SaveConfig();
 }
 
