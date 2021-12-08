@@ -90,11 +90,10 @@ function EndCompensation() {
 }
 
 function Mutate(string MutateString, PlayerPawn Sender) {
-	local int I;
 	if (Left(MutateString, 6) ~= "UTPlus") {
-		MutateString = class'StringUtils'.static.Trim(Mid(MutateString, 6, Len(MutateString)))
+		MutateString = class'StringUtils'.static.Trim(Mid(MutateString, 6, Len(MutateString)));
 		if (MutateString ~= "version") {
-			Sender.ClientMessage(class'StringUtils'.default.GetPackage());
+			Sender.ClientMessage(class'StringUtils'.static.GetPackage());
 		} else if (MutateString ~= "EnablePingCompensation") {
 			if (Sender.PlayerReplicationInfo.bAdmin) {
 				default.bEnablePingCompensation = true;
