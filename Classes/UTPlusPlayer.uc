@@ -313,6 +313,30 @@ final function UTPlus_UpdateRotation(float DeltaTime, float maxPitch) {
 	SetRotation(NewRotation);
 }
 
+// COMMANDS
+
+function string GetReadyMessage() {
+	if (Level.Game.IsA('DeathMatchPlus'))
+		return DeathMatchPlus(Level.Game).ReadyMessage;
+
+	return class'DeathMatchPlus'.default.ReadyMessage;
+}
+
+function string GetNotReadyMessage() {
+	if (Level.Game.IsA('DeathMatchPlus'))
+		return DeathMatchPlus(Level.Game).NotReadyMessage;
+
+	return class'DeathMatchPlus'.default.NotReadyMessage;
+}
+
+exec function Ready() {
+	bReadyToPlay = !bReadyToPlay;
+	if (bReadyToPlay)
+		ClientMessage(GetReadyMessage());
+	else
+		ClientMessage(GetNotReadyMessage());
+}
+
 // STATES
 
 state PlayerWalking {
