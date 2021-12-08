@@ -13,8 +13,9 @@ for /f "delims=" %%X IN ('dir /B /A /S *') DO (
 
 :FoundPkgName
 
+set MAKEINI=%BUILD_DIR%Build\Temp\make.ini
 set DEPENDENCIES=Core Engine Editor UWindow Fire IpDrv UWeb UBrowser UnrealShare UnrealI UMenu Botpack UTMenu UTBrowser
-call :GenerateMakeIni %BUILD_DIR%make.ini %DEPENDENCIES% %PACKAGE_NAME%
+call :GenerateMakeIni %MAKEINI% %DEPENDENCIES% %PACKAGE_NAME%
 
 pushd ..\System
 
@@ -22,7 +23,7 @@ pushd ..\System
 :: New package GUID, No doubts about staleness
 del %PACKAGE_NAME%.u
 
-ucc make -ini=%BUILD_DIR%make.ini -Silent
+ucc make -ini=%MAKEINI% -Silent
 
 :: dont do the post-process steps if compilation failed
 if ERRORLEVEL 1 goto compile_failed
