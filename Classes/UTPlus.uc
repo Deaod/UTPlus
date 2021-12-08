@@ -1,6 +1,7 @@
 class UTPlus extends Engine.Mutator
     config(UTPlus);
 
+var config bool bEnablePingCompensation;
 var UTPlusDummy CompDummies;
 
 function ModifyLogin(
@@ -88,7 +89,37 @@ function EndCompensation() {
 	}
 }
 
+function Mutate(string MutateString, PlayerPawn Sender) {
+	local int I;
+	if (Left(MutateString, 6) ~= "UTPlus") {
+		MutateString = class'StringUtils'.static.Trim(Mid(MutateString, 6, Len(MutateString)))
+		if (MutateString ~= "version") {
+			Sender.ClientMessage(class'StringUtils'.default.GetPackage());
+		} else if (MutateString ~= "EnablePingCompensation") {
+			if (Sender.PlayerReplicationInfo.bAdmin) {
+				default.bEnablePingCompensation = true;
+				Sender.ClientMessage("Ping Compensation Enabled!");
+			} else {
+				Sender.ClientMessage("Please Log In As Admin!");
+			}
+		} else if (MutateString ~= "DisablePingCompensation") {
+			if (Sender.PlayerReplicationInfo.bAdmin) {
+				default.bEnablePingCompensation = false;
+				Sender.ClientMessage("Ping Compensation Disabled!");
+			} else {
+				Sender.ClientMessage("Please Log In As Admin!");
+			}
+		} else {
+			Sender.ClientMessage("Unknown UTPlus Command:"@MutateString);
+		}
+	} else {
+		super.Mutate(MutateString, Sender);
+	}
+}
+
 defaultproperties {
+	bEnablePingCompensation=True
+
 	bAlwaysTick=True
 	RemoteRole=ROLE_SimulatedProxy
 	bAlwaysRelevant=True

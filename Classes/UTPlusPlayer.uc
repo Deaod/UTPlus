@@ -149,7 +149,7 @@ function actor TraceShot(out vector HitLocation, out vector HitNormal, vector En
 	local Actor A, Other;
 	local UTPlusDummy D;
 	
-	if (Role != ROLE_Authority)
+	if (Role != ROLE_Authority || class'UTPlus'.default.bEnablePingCompensation == false)
 		return super.TraceShot(HitLocation, HitNormal, EndTrace, StartTrace);
 
 	MutUTPlus.CompensateFor(PlayerReplicationInfo.Ping);
@@ -159,9 +159,6 @@ function actor TraceShot(out vector HitLocation, out vector HitNormal, vector En
 			D = UTPlusDummy(A);
 			if ((D.Actual != self) && D.AdjustHitLocation(HitLocation, EndTrace - StartTrace))
 				Other = D.Actual;
-		} else if (Pawn(A) != None) {
-			if ((A != self) && Pawn(A).AdjustHitLocation( HitLocation, EndTrace - StartTrace))
-				Other = A;
 		} else if ((A == Level) || (Mover(A) != None) || A.bProjTarget || (A.bBlockPlayers && A.bBlockActors)) {
 			Other = A;
 		}
