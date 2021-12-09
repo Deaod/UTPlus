@@ -8,7 +8,7 @@ function TraceFire( float Accuracy ) {
 
 	Owner.MakeNoise(Pawn(Owner).SoundDampening);
 	GetAxes(Pawn(owner).ViewRotation,X,Y,Z);
-	StartTrace = Owner.Location + CalcDrawOffset();
+	StartTrace = Owner.Location + vect(0,0,1) * Pawn(Owner).EyeHeight;
 	EndTrace = StartTrace + Accuracy * (FRand() - 0.5 )* Y * 1000
 		+ Accuracy * (FRand() - 0.5 ) * Z * 1000 ;
 
