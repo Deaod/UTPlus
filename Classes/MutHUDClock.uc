@@ -15,6 +15,8 @@ simulated event PostRender(Canvas C) {
 	) {
 		DrawTime(ChallengeHUD(LocalHUD), C);
 	}
+
+	super.PostRender(C);
 }
 
 simulated function int GetClockTime(HUD H) {
