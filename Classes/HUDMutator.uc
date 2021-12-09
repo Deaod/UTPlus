@@ -1,4 +1,5 @@
-class HUDMutator extends Mutator;
+class HUDMutator extends Mutator
+	abstract;
 
 var PlayerPawn LocalPlayer;
 var HUD LocalHUD;
