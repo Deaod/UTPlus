@@ -1,4 +1,5 @@
 [Public]
+Object=(Name=UTPlus.MutHUDClock,Class=Class,MetaClass=Engine.Mutator,Description="HUD Clock,Shows remaining/elapsed time on HUD")
 Object=(Name=UTPlus.MutWarmup,Class=Class,MetaClass=Engine.Mutator,Description="Warmup,Allows play before all players are ready")
 Object=(Name=UTPlus.MutXHairFactory,Class=Class,MetaClass=Engine.Mutator,Description="XHair Factory,Allows drawing of arbitrary crosshairs")
 Object=(Name=UTPlus.UTPlus,Class=Class,MetaClass=Engine.Mutator,Description="UTPlus,NextGen UT Feeling")
