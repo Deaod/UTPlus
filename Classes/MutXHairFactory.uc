@@ -1,7 +1,4 @@
-class MutXHairFactory extends Mutator;
-
-var PlayerPawn LocalPlayer;
-var HUD LocalHUD;
+class MutXHairFactory extends HUDMutator;
 
 var Object SettingsHelper;
 var XHairSettings Settings;
@@ -10,25 +7,8 @@ var XHairLayer Layers;
 var int SavedCrosshair;
 
 simulated event PostBeginPlay() {
+	super.PostBeginPlay();
 	InitSettings();
-	if (Settings.bEnabled) {
-		RegisterHUDMutator2();
-	}
-}
-
-simulated final function RegisterHUDMutator2() {
-	local PlayerPawn P;
-
-	foreach AllActors(class'PlayerPawn', P) {
-		if (P.myHUD != None) {
-			NextHUDMutator = P.myHud.HUDMutator;
-			P.myHUD.HUDMutator = Self;
-			bHUDMutator = True;
-
-			LocalPlayer = P;
-			LocalHUD = P.myHUD;
-		}
-	}
 }
 
 simulated final function InitSettings() {
@@ -92,8 +72,7 @@ simulated event PostRender(Canvas C) {
 		}
 	}
 
-	if (NextHUDMutator != none)
-		NextHUDMutator.PostRender(C);
+	super.PostRender(C);
 }
 
 simulated event Destroyed() {
@@ -103,8 +82,5 @@ simulated event Destroyed() {
 }
 
 defaultproperties {
-	bAlwaysRelevant=True
-	RemoteRole=ROLE_SimulatedProxy
-
 	SavedCrosshair=-1
 }

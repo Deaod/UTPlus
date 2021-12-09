@@ -1,4 +1,4 @@
-class MutWarmup extends Mutator
+class MutWarmup extends HUDMutator
 	config(Warmup);
 
 var config int WarmupTimeLimit;
@@ -20,7 +20,6 @@ var localized string NotReadyText;
 var localized color NotReadyColor;
 var localized string WarmupText;
 
-var PlayerPawn HUDOwner;
 var bool bInWarmup;
 
 replication {
@@ -33,14 +32,13 @@ simulated function PostRender(Canvas C) {
 	local color MessageColor;
 	local float X, Y;
 
-	if (NextHUDMutator != none)
-		NextHUDMutator.PostRender(C);
+	super.PostRender(C);
 
-	if (HUDOwner == none || bInWarmup == false)
+	if (LocalPlayer == none || bInWarmup == false)
 		return;
 
 	// Write WARMUP - READY or WARMUP - NOT READY on screen
-	if (TournamentPlayer(HUDOwner).bReadyToPlay) {
+	if (TournamentPlayer(LocalPlayer).bReadyToPlay) {
 		Message = WarmupText@"-"@ReadyText;
 		MessageColor = ReadyColor;
 	} else {
@@ -50,7 +48,8 @@ simulated function PostRender(Canvas C) {
 
 	class'CanvasUtils'.static.SaveCanvas(C);
 
-	C.Font = ChallengeHUD(HUDOwner.myHUD).MyFonts.GetBigFont(C.SizeX);
+	C.Style = ERenderStyle.STY_Normal;
+	C.Font = ChallengeHUD(LocalHUD).MyFonts.GetBigFont(C.SizeX);
 	C.DrawColor = MessageColor;
 	C.TextSize(Message, X, Y);
 	C.SetPos(C.SizeX*0.5 - X*0.5, C.SizeY*0.8);
@@ -315,21 +314,6 @@ function DetermineWeapons() {
 		AddWeaponToGive(string(W.Class));
 }
 
-simulated function PostBeginPlay() {
-	local PlayerPawn P;
-
-	Super.PostBeginPlay();
-
-	RegisterHUDMutator();
-
-	foreach AllActors(class'PlayerPawn', P) {
-		if (P.Role == ROLE_Authority && P.RemoteRole == ROLE_SimulatedProxy)
-			HUDOwner = P;
-		if (P.Role == ROLE_AutonomousProxy)
-			HUDOwner = P;
-	}
-}
-
 defaultproperties {
 	WarmupTimeLimit=0
 
@@ -339,6 +323,4 @@ defaultproperties {
 	NotReadyColor=(R=255,G=255,B=255,A=255)
 	WarmupText="Warmup"
 	bInWarmup=True
-
-	bAlwaysRelevant=True
 }
