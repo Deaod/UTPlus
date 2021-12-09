@@ -9,8 +9,12 @@ var bool bPaused;
 var float GRISecondCountOffset;
 
 simulated event PostRender(Canvas C) {
-	if (LocalHUD.IsA('ChallengeHUD'))
+	if (LocalHUD.IsA('ChallengeHUD') &&
+		ChallengeHUD(LocalHUD).bHideHUD == false &&
+		(LocalPlayer.PlayerReplicationInfo == none || LocalPlayer.PlayerReplicationInfo.bIsSpectator == false)
+	) {
 		DrawTime(ChallengeHUD(LocalHUD), C);
+	}
 }
 
 simulated function int GetClockTime(HUD H) {
