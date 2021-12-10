@@ -13,7 +13,9 @@ simulated event PostRender(Canvas C) {
 		ChallengeHUD(LocalHUD).bHideHUD == false &&
 		(LocalPlayer.PlayerReplicationInfo == none || LocalPlayer.PlayerReplicationInfo.bIsSpectator == false)
 	) {
+		class'CanvasUtils'.static.SaveCanvas(C);
 		DrawTime(ChallengeHUD(LocalHUD), C);
+		class'CanvasUtils'.static.RestoreCanvas(C);
 	}
 
 	super.PostRender(C);
@@ -73,8 +75,6 @@ simulated function DrawTime(ChallengeHUD H, Canvas C) {
 	CharXScaled = CharX * H.Scale;
 	CharYScaled = CharY * H.Scale;
 
-	C.DrawColor = H.HUDColor;
-
 	Seconds = GetClockTime(H);
 	Min = Seconds / 60;
 	Sec = Seconds % 60;
@@ -85,6 +85,11 @@ simulated function DrawTime(ChallengeHUD H, Canvas C) {
 		XL = 15; // extra 1 as 7-Seg char
 	else
 		XL = 0;
+
+	C.Style = H.Style;
+	if (H.Opacity > 8 || H.Level.bHighDetailMode == false)
+		C.Style = ERenderStyle.STY_Normal;
+	C.DrawColor = H.HUDColor;
 
 	if (H.bHideStatus) {
 		if (H.bHideAllWeapons) {
@@ -101,13 +106,13 @@ simulated function DrawTime(ChallengeHUD H, Canvas C) {
 
 	C.SetPos(X,Y);
 	C.DrawTile(Texture'ClockBG', 128*H.Scale + XL * H.Scale, 64*H.Scale, 0, 0, 128.0, 64.0);
+
 	C.Style = H.Style;
+	if (H.Opacity > 8 || H.Level.bHighDetailMode == false)
+		C.Style = ERenderStyle.STY_Normal;
 	C.DrawColor = H.WhiteColor;
 
 	X += XL * H.Scale;
-
-	if (H.Level.bHighDetailMode)
-		C.Style = ERenderStyle.STY_Translucent;
 
 	FullSize = CharXScaled * 4 + 12 * H.Scale; //At least 4 digits and : (extra size not counted)
 
