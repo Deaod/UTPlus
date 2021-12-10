@@ -1,7 +1,7 @@
 class XHairSettings extends Object
 	config(XHairFactory) perobjectconfig;
 
-var bool bEnabled;
+var config bool bEnabled;
 
 function Initialize() {
 	SaveConfig();
