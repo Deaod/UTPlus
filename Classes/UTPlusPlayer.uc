@@ -158,14 +158,14 @@ function actor TraceShot(out vector HitLocation, out vector HitNormal, vector En
 	foreach TraceActors( class'Actor', A, HitLocation, HitNormal, EndTrace, StartTrace) {
 		if (A.IsA('UTPlusDummy')) {
 			D = UTPlusDummy(A);
-			if ((D.Actual != self) && D.AdjustHitLocation(HitLocation, EndTrace - StartTrace))
+			if ((D.Actual != self) && D.AdjustHitLocation(HitLocation, EndTrace - StartTrace)) {
 				Other = D.Actual;
+				break;
+			}
 		} else if ((A == Level) || (Mover(A) != None) || A.bProjTarget || (A.bBlockPlayers && A.bBlockActors)) {
 			Other = A;
-		}
-
-		if (Other != None)
 			break;
+		}
 	}
 
 	MutUTPlus.EndCompensation();
