@@ -111,6 +111,10 @@ event Possess() {
 	}
 
 	UTPlus_InitSettings();
+
+	if (PlayerReplicationInfo.Class == class'PlayerReplicationInfo') {
+		PlayerReplicationInfo.NetUpdateFrequency = 20;
+	}
 }
 
 simulated event Touch(Actor Other) {
