@@ -117,7 +117,7 @@ simulated final function PlayHitSound(float Damage, int OwnTeam, int EnemyTeam) 
 
 	if (bEnable) {
 		if (bPitchShift)
-			Pitch = Lerp(Damage/300.0, 3.2, 0.22);
+			Pitch = Lerp(FClamp(Damage/300.0, 0, 1), 3.2, 0.22);
 		else
 			Pitch = 1.0;
 
