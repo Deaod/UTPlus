@@ -15,7 +15,7 @@ enum EBeamType {
 	BT_Instant
 };
 var config EBeamType BeamType;
-var config bool bHideOwnBeam;
+var config bool bBeamHideOwn;
 var config float BeamScale;
 var config float BeamDuration;
 var config float BeamFadeCurve;
@@ -36,7 +36,7 @@ defaultproperties {
 	BeamDestinationMode=BAM_Precise
 
 	BeamType=BT_Default
-	bHideOwnBeam=false
+	bBeamHideOwn=False
 	BeamScale=0.45
 	BeamDuration=0.75
 	BeamFadeCurve=4

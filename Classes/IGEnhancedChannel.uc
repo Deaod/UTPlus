@@ -73,7 +73,7 @@ simulated final function PlayBeam(
 	SmokeRotation.roll = Rand(65535);
 
 	if (Settings.BeamType == BT_None) return;
-	if (Settings.bHideOwnBeam &&
+	if (Settings.bBeamHideOwn &&
 		(SourcePRI.Owner == PlayerOwner || SourcePRI.Owner == PlayerOwner.ViewTarget) &&
 		PlayerOwner.bBehindView == false)
 		return;
