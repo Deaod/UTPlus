@@ -16,6 +16,7 @@ enum EBeamType {
 };
 var config EBeamType BeamType;
 var config bool bBeamHideOwn;
+var config bool bBeamClientSide;
 var config float BeamScale;
 var config float BeamDuration;
 var config float BeamFadeCurve;
@@ -37,6 +38,7 @@ defaultproperties {
 
 	BeamType=BT_Default
 	bBeamHideOwn=False
+	bBeamClientSide=False
 	BeamScale=0.45
 	BeamDuration=0.75
 	BeamFadeCurve=4

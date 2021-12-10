@@ -26,16 +26,43 @@ simulated final function PlayEffect(
 	vector TargetOffset,
 	vector HitNormal
 ) {
-	local vector SmokeLocation;
-	local vector HitLocation;
-
-	if (Level.NetMode == NM_DedicatedServer) return;
+	if (Level.NetMode == NM_DedicatedServer)
+		return;
 
 	if (PlayerOwner == none)
 		PlayerOwner = PlayerPawn(Owner);
 
 	if (Settings == none)
 		InitSettings();
+
+	if (Settings.bBeamClientSide && SourcePRI.Owner == Owner)
+		return;
+
+	ClientPlayEffect(
+		SourcePRI,
+		SourceLocation,
+		SourceOffset,
+		Target,
+		TargetLocation,
+		TargetOffset,
+		HitNormal
+	);
+}
+
+simulated final function ClientPlayEffect(
+	PlayerReplicationInfo SourcePRI,
+	vector SourceLocation,
+	vector SourceOffset,
+	Actor Target,
+	vector TargetLocation,
+	vector TargetOffset,
+	vector HitNormal
+) {
+	local vector SmokeLocation;
+	local vector HitLocation;
+
+	if (PlayerOwner == none)
+		PlayerOwner = PlayerPawn(Owner);
 
 	if (SourcePRI.Owner != none && Settings.BeamOriginMode == BAM_Attached) {
 		SmokeLocation = SourcePRI.Owner.Location + SourceOffset;

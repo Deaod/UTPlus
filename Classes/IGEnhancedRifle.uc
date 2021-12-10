@@ -1,6 +1,7 @@
 class IGEnhancedRifle extends Botpack.SuperShockRifle;
 
 var MutIGEnhanced Mutator;
+var IGEnhancedChannel Channel;
 
 simulated event PostBeginPlay() {
 	super.PostBeginPlay();
@@ -10,6 +11,70 @@ simulated event PostBeginPlay() {
 
 	foreach AllActors(class'MutIGEnhanced', Mutator)
 		break;
+}
+
+simulated final function PlayBeamClientSide() {
+	local Pawn P;
+	local Actor HitActor;
+	local vector HitLocation;
+	local vector HitNormal;
+	local vector X, Y, Z;
+	local vector TraceStart;
+	local vector TraceEnd;
+
+	local vector SourceOffset;
+	local vector SourceLocation;
+
+	P = Pawn(Owner);
+	if (P == none)
+		return;
+
+	GetAxes(P.ViewRotation, X, Y, Z);
+
+	TraceStart = Owner.Location + vect(0,0,1)*P.EyeHeight;
+	TraceEnd = TraceStart + X*10000;
+
+	HitActor = P.TraceShot(HitLocation, HitNormal, TraceEnd, TraceStart);
+
+	if (HitActor == none) {
+		HitLocation = TraceEnd;
+		HitNormal = -X;
+	}
+
+	SourceOffset = CalcDrawOffset() + (FireOffset.X + 20) * X + FireOffset.Y * Y + FireOffset.Z * Z;
+	SourceLocation = Owner.Location + SourceOffset;
+
+	Channel.ClientPlayEffect(
+		P.PlayerReplicationInfo,
+		SourceLocation,
+		SourceOffset,
+		HitActor,
+		HitLocation,
+		(HitLocation - HitActor.Location),
+		HitNormal);
+
+}
+
+simulated function bool ClientFire(float V) {
+	if (Level.NetMode == NM_Client) {
+		if (Channel == none) {
+			foreach AllActors(class'IGEnhancedChannel', Channel)
+				if (Channel.Owner == Owner)
+					break;
+			if (Channel.Owner != Owner)
+				Channel = none;
+		}
+		if (Channel != none) {
+			if (Channel.Settings == none)
+				Channel.InitSettings();
+
+			if (Channel.Settings.bBeamClientSide) {
+				PlayBeamClientSide();
+			}
+		}
+	}
+
+	return super.ClientFire(V);
 }
 
 // StartTrace here does not take FireOffset into consideration.
