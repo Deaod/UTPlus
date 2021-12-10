@@ -3,7 +3,9 @@ class HitFeedbackTracker extends TournamentPickup;
 var int LastDamage;
 
 function bool HandlePickupQuery(Inventory Item) {
-	return Inventory.HandlePickupQuery(Item);
+	if (Inventory != none)
+		return Inventory.HandlePickupQuery(Item);
+	return false;
 }
 
 function int ArmorPriority(name DamageType) {
