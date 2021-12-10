@@ -1,5 +1,17 @@
 class IGEnhancedRifle extends Botpack.SuperShockRifle;
 
+var MutIGEnhanced Mutator;
+
+simulated event PostBeginPlay() {
+	super.PostBeginPlay();
+
+	if (Role != ROLE_Authority)
+		return;
+
+	foreach AllActors(class'MutIGEnhanced', Mutator)
+		break;
+}
+
 // StartTrace here does not take FireOffset into consideration.
 // The visible effect still will, but the hitscan trace will not.
 function TraceFire( float Accuracy ) {
@@ -29,6 +41,53 @@ function TraceFire( float Accuracy ) {
 	ProcessTraceHit(Other, HitLocation, HitNormal, vector(AdjustedAim),Y,Z);
 }
 
+function ProcessTraceHit(
+	Actor Other,
+	vector HitLocation,
+	vector HitNormal,
+	vector X,
+	vector Y,
+	vector Z
+) {
+	local SuperShockBeam Smoke;
+	local vector SourceOffset;
+	local vector SourceLocation;
+	local vector TargetOffset;
+
+	if (Other == None) {
+		HitNormal = -X;
+		HitLocation = Owner.Location + X*10000.0;
+	}
+
+	SourceOffset = CalcDrawOffset() + (FireOffset.X + 20) * X + FireOffset.Y * Y + FireOffset.Z * Z;
+	SourceLocation = Owner.Location + SourceOffset;
+
+	if (Other != none)
+		TargetOffset = HitLocation - Other.Location;
+
+	Mutator.PlayEffect(
+		Pawn(Owner).PlayerReplicationInfo,
+		SourceLocation,
+		SourceOffset,
+		Other,
+		HitLocation,
+		TargetOffset,
+		HitNormal
+	);
+
+	Smoke = Spawn(class'SuperShockBeam');
+	Smoke.RemoteRole = ROLE_None;
+
+	if ((Other != self) && (Other != Owner) && (Other != None)) 
+		Other.TakeDamage(HitDamage, Pawn(Owner), HitLocation, 60000.0*X, MyDamageType);
+}
+
+function SpawnEffect(vector HitLocation, vector SmokeLocation)
+{
+	local SuperShockBeam Smoke;
+	Smoke = Spawn(class'SuperShockBeam');
+	Smoke.RemoteRole = ROLE_None;
+}
 
 // Use PlayAnim instead of LoopAnim to avoid inconsistent reload times,
 // depending on whether the animation is looping or not
