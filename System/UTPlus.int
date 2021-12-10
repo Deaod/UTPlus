@@ -13,6 +13,8 @@ ReadyColor=(R=255,G=255,B=255,A=255)
 NotReadyText="NOT READY"
 NotReadyColor=(R=255,G=255,B=255,A=255)
 WarmupText="Warmup"
+ReadyHintText="Use console command 'Ready' to ready up!"
+ReadyHintColor=(R=255,G=255,B=255,A=255)
 
 [UTPlusPlayer]
 MenuName="Male Commando"

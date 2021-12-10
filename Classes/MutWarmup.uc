@@ -19,6 +19,8 @@ var localized color ReadyColor;
 var localized string NotReadyText;
 var localized color NotReadyColor;
 var localized string WarmupText;
+var localized string ReadyHintText;
+var localized color ReadyHintColor;
 
 var bool bInWarmup;
 
@@ -31,6 +33,8 @@ simulated function PostRender(Canvas C) {
 	local string Message;
 	local color MessageColor;
 	local float X, Y;
+	local float HintY;
+	local ChallengeHUD CH;
 
 	super.PostRender(C);
 
@@ -46,13 +50,23 @@ simulated function PostRender(Canvas C) {
 		MessageColor = NotReadyColor;
 	}
 
+	CH = ChallengeHUD(LocalHUD);
+
 	class'CanvasUtils'.static.SaveCanvas(C);
 
 	C.Style = ERenderStyle.STY_Normal;
-	C.Font = ChallengeHUD(LocalHUD).MyFonts.GetBigFont(C.SizeX);
+
+	C.Font = CH.MyFonts.GetSmallFont(C.SizeX);
+	C.DrawColor = ReadyHintColor;
+	C.TextSize(ReadyHintText, X, Y);
+	HintY = C.SizeY - (64*CH.Scale) - Y - 3;
+	C.SetPos((C.SizeX - X)*0.5, HintY);
+	C.DrawText(ReadyHintText);
+
+	C.Font = CH.MyFonts.GetBigFont(C.SizeX);
 	C.DrawColor = MessageColor;
 	C.TextSize(Message, X, Y);
-	C.SetPos(C.SizeX*0.5 - X*0.5, C.SizeY*0.8);
+	C.SetPos(C.SizeX*0.5 - X*0.5, HintY - Y - 5);
 	C.DrawText(Message);
 
 	class'CanvasUtils'.static.RestoreCanvas(C);
@@ -322,5 +336,7 @@ defaultproperties {
 	NotReadyText="NOT READY"
 	NotReadyColor=(R=255,G=255,B=255,A=255)
 	WarmupText="Warmup"
+	ReadyHintText="Use console command 'Ready' to ready up!"
+	ReadyHintColor=(R=255,G=255,B=255,A=255)
 	bInWarmup=True
 }
