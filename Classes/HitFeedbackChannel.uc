@@ -26,6 +26,9 @@ simulated final function PlayHitFeedback(PlayerReplicationInfo VictimPRI, int Da
 	local int OwnTeam;
 	local int EnemyTeam;
 
+	if (Level.NetMode == NM_DedicatedServer)
+		return;
+
 	if (VictimPRI == none)
 		return;
 
