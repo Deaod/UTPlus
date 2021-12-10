@@ -30,6 +30,9 @@ simulated final function InitSettings() {
 		Latest = L;
 		L = new(SettingsHelper) class'XHairLayer';
 	}
+
+	for (L = Layers; L != none; L = L.Next)
+		L.Initialize();
 }
 
 static final function string ObjectGetPropertyTextOrDefault(Object O, string Property, string Def) {
@@ -44,6 +47,9 @@ simulated event PostRender(Canvas C) {
 	local XHairLayer L;
 	local bool bAutoScale;
 	local float Scale;
+
+	if (Settings == none)
+		InitSettings();
 
 	if (Settings.bEnabled) {
 		// This leads to crosshair overlap for a single frame

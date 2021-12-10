@@ -15,7 +15,7 @@ var() config bool   bSmooth;
 var Texture DrawTex;
 var XHairLayer Next;
 
-event Spawned() {
+event Initialize() {
 	if (bUse == false)
 		return;
 
