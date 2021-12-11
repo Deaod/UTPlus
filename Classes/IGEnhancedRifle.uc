@@ -165,3 +165,13 @@ simulated function PlayAltFiring() {
 	PlayOwnedSound(FireSound, SLOT_None, Pawn(Owner).SoundDampening*4.0);
 	PlayAnim('Fire1', 0.20 + 0.20 * FireAdjust,0.05);
 }
+
+state ClientFiring {
+	simulated function bool ClientFire(float Value) {
+		return false;
+	}
+
+	simulated function bool ClientAltFire(float Value) {
+		return false;
+	}
+}
