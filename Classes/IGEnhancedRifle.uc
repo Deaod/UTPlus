@@ -55,7 +55,7 @@ simulated final function PlayBeamClientSide() {
 
 }
 
-simulated function bool ClientFire(float V) {
+simulated final function ClientFireHook() {
 	if (Level.NetMode == NM_Client) {
 		if (Channel == none) {
 			foreach AllActors(class'IGEnhancedChannel', Channel)
@@ -73,8 +73,16 @@ simulated function bool ClientFire(float V) {
 			}
 		}
 	}
+}
 
+simulated function bool ClientFire(float V) {
+	ClientFireHook();
 	return super.ClientFire(V);
+}
+
+simulated function bool ClientAltFire(float V) {
+	ClientFireHook();
+	return super.ClientAltFire(V);
 }
 
 // StartTrace here does not take FireOffset into consideration.
