@@ -24,6 +24,9 @@ event Initialize() {
 	} else {
 		DrawTex = Texture(DynamicLoadObject(Texture, class'Texture'));
 	}
+
+	if (Style == 0)
+		Style = 1;
 }
 
 function Draw(Canvas C, float Scale) {
