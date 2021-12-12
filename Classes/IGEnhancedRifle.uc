@@ -22,6 +22,7 @@ simulated final function PlayBeamClientSide() {
 	local vector TraceStart;
 	local vector TraceEnd;
 
+	local float YMod;
 	local vector SourceOffset;
 	local vector SourceLocation;
 
@@ -41,7 +42,14 @@ simulated final function PlayBeamClientSide() {
 		HitNormal = -X;
 	}
 
-	SourceOffset = CalcDrawOffset() + (FireOffset.X + 20) * X + FireOffset.Y * Y + FireOffset.Z * Z;
+	YMod = -1;
+	if (Owner != none && Owner.IsA('PlayerPawn')) {
+		if (Abs(PlayerPawn(Owner).Handedness) > 1)
+			YMod = 0;
+		else
+			YMod = PlayerPawn(Owner).Handedness;
+	}
+	SourceOffset = CalcDrawOffset() + (FireOffset.X + 20) * X + FireOffset.Y * YMod * Y  + FireOffset.Z * Z;
 	SourceLocation = Owner.Location + SourceOffset;
 
 	Channel.ClientPlayEffect(
@@ -123,6 +131,7 @@ function ProcessTraceHit(
 	vector Z
 ) {
 	local SuperShockBeam Smoke;
+	local float YMod;
 	local vector SourceOffset;
 	local vector SourceLocation;
 	local vector TargetOffset;
@@ -132,7 +141,14 @@ function ProcessTraceHit(
 		HitLocation = Owner.Location + X*10000.0;
 	}
 
-	SourceOffset = CalcDrawOffset() + (FireOffset.X + 20) * X + FireOffset.Y * Y + FireOffset.Z * Z;
+	YMod = -1;
+	if (Owner != none && Owner.IsA('PlayerPawn')) {
+		if (Abs(PlayerPawn(Owner).Handedness) > 1)
+			YMod = 0;
+		else
+			YMod = PlayerPawn(Owner).Handedness;
+	}
+	SourceOffset = CalcDrawOffset() + (FireOffset.X + 20) * X - FireOffset.Y * YMod * Y + FireOffset.Z * Z;
 	SourceLocation = Owner.Location + SourceOffset;
 
 	if (Other != none)
