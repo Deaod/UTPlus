@@ -162,8 +162,6 @@ state WarmupCountdown {
 		ResetPlayers();
 		ResetTeams();
 
-		DMP.CountDown = 10;
-
 		bInWarmup = false;
 	}
 
@@ -215,7 +213,7 @@ function ResetGame(DeathMatchPlus G) {
 
 	G.bOvertime = false;
 	G.bRequireReady = true;
-	G.CountDown = 0;
+	G.CountDown = 10;
 	G.TimeLimit = GameTimeLimit;
 	G.RemainingTime = GameTimeLimit*60;
 	TGRI.RemainingMinute = G.RemainingTime;
@@ -234,6 +232,10 @@ function ResetGame(DeathMatchPlus G) {
 		if (G.WorldLog != none)
 			G.WorldLog.LogPlayerConnect(PP);
 	}
+	if (G.LocalLog != none)
+		G.LocalLog.FlushLog();
+	if (G.WorldLog != none)
+		G.WorldLog.FlushLog();
 }
 
 function ResetPlayers() {
