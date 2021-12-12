@@ -1,6 +1,6 @@
 class MutHUDClock extends HUDMutator;
 
-#exec Texture Import File=Textures\ClockBG.pcx Name=ClockBG Mips=Off
+#exec Texture Import File=Textures\HUDClockBackground.pcx Name=HUDClockBackground Mips=Off
 
 var bool bInOvertime;
 var int OvertimeOffset;
@@ -105,7 +105,7 @@ simulated function DrawTime(ChallengeHUD H, Canvas C) {
 	}
 
 	C.SetPos(X,Y);
-	C.DrawTile(Texture'ClockBG', 128*H.Scale + XL * H.Scale, 64*H.Scale, 0, 0, 128.0, 64.0);
+	C.DrawTile(Texture'HUDClockBackground', 128*H.Scale + XL * H.Scale, 64*H.Scale, 0, 0, 128.0, 64.0);
 
 	C.Style = H.Style;
 	if (H.Opacity > 8 || H.Level.bHighDetailMode == false)
