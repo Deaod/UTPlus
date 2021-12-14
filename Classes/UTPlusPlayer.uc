@@ -16,6 +16,9 @@ var float UTPlus_OldShakeVert;
 var float UTPlus_OldBaseEyeHeight;
 var float UTPlus_EyeHeightOffset;
 
+var float UTPlus_LastRestartTime;
+var float UTPlus_RestartFireLockoutTime;
+
 var PlayerPawn UTPlus_LocalPlayer;
 
 var UTPlusClientSettings Settings;
@@ -102,6 +105,8 @@ simulated event PostBeginPlay() {
 event Possess() {
 	super.Possess();
 
+	UTPlus_InitSettings();
+
 	if (Level.NetMode == NM_Client) {
 		UTPlus_469Client = int(Level.EngineVersion) >= 469;
 	} else {
@@ -109,8 +114,6 @@ event Possess() {
 		if (RemoteRole != ROLE_AutonomousProxy)
 			UTPlus_469Client = UTPlus_469Server;
 	}
-
-	UTPlus_InitSettings();
 
 	if (PlayerReplicationInfo.Class == class'PlayerReplicationInfo') {
 		PlayerReplicationInfo.NetUpdateFrequency = 20;
@@ -320,6 +323,16 @@ final function UTPlus_UpdateRotation(float DeltaTime, float maxPitch) {
 
 // COMMANDS
 
+exec function Fire(optional float F) {
+	if (Level.TimeSeconds - UTPlus_LastRestartTime > UTPlus_RestartFireLockoutTime)
+		super.Fire(F);
+}
+
+exec function AltFire(optional float F) {
+	if (Level.TimeSeconds - UTPlus_LastRestartTime > UTPlus_RestartFireLockoutTime)
+		super.AltFire(F);
+}
+
 function string GetReadyMessage() {
 	if (Level.Game.IsA('DeathMatchPlus'))
 		return DeathMatchPlus(Level.Game).ReadyMessage;
@@ -513,6 +526,11 @@ state FeigningDeath {
 }
 
 state Dying {
+	event EndState() {
+		super.EndState();
+		UTPlus_LastRestartTime = Level.TimeSeconds;
+	}
+
 	function PlayerMove(float DeltaTime) {
 		local vector X,Y,Z;
 
@@ -816,7 +834,6 @@ function PlayGutHit(float tweentime) {
 		TweenAnim('GutHit', tweentime);
 	else
 		TweenAnim('Dead8', tweentime);
-
 }
 
 function PlayHeadHit(float tweentime) {
@@ -859,6 +876,8 @@ static function SetMultiSkin(Actor SkinActor, string SkinName, string FaceName, 
 }
 
 defaultproperties {
+	UTPlus_RestartFireLockoutTime=0.3
+
 	bAlwaysRelevant=True
 
 	Drown=Botpack.MaleSounds.drownM02
