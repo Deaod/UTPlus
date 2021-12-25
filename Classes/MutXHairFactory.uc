@@ -1,10 +1,11 @@
-class MutXHairFactory extends HUDMutator;
+class MutXHairFactory extends HUDMutator
+	config(User);
 
 var Object SettingsHelper;
 var XHairSettings Settings;
 var XHairLayer Layers;
 
-var int SavedCrosshair;
+var config int SavedCrosshair;
 
 simulated event PostBeginPlay() {
 	super.PostBeginPlay();
@@ -54,7 +55,10 @@ simulated event PostRender(Canvas C) {
 	if (Settings.bEnabled) {
 		// This leads to crosshair overlap for a single frame
 		if (LocalHUD.Crosshair < MaxInt) {
-			SavedCrosshair = LocalHUD.Crosshair;
+			if (SavedCrosshair < 0) {
+				SavedCrosshair = LocalHUD.Crosshair;
+				SaveConfig();
+			}
 			LocalHUD.Crosshair = MaxInt;
 		}
 
@@ -84,6 +88,8 @@ simulated event PostRender(Canvas C) {
 simulated event Destroyed() {
 	if (SavedCrosshair >= 0) {
 		LocalHUD.Crosshair = SavedCrosshair;
+		SavedCrosshair = -1;
+		SaveConfig();
 	}
 }
 
