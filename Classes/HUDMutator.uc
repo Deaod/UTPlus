@@ -24,6 +24,9 @@ simulated event PostRender(Canvas C) {
 simulated final function RegisterHUDMutator2() {
 	local PlayerPawn P;
 
+	if (Level.NetMode == NM_DedicatedServer)
+		return;
+
 	foreach AllActors(class'PlayerPawn', P) {
 		if (P.myHUD != None) {
 			NextHUDMutator = P.myHud.HUDMutator;
