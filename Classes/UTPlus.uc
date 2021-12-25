@@ -90,28 +90,32 @@ function EndCompensation() {
 	}
 }
 
+function HandleMutateComand(string C, PlayerPawn Sender) {
+	if (C ~= "version") {
+		Sender.ClientMessage(class'StringUtils'.static.GetPackage());
+	} else if (C ~= "EnablePingCompensation") {
+		if (Sender.PlayerReplicationInfo.bAdmin) {
+			default.bEnablePingCompensation = true;
+			Sender.ClientMessage("Ping Compensation Enabled!");
+		} else {
+			Sender.ClientMessage("Please Log In As Admin!");
+		}
+	} else if (C ~= "DisablePingCompensation") {
+		if (Sender.PlayerReplicationInfo.bAdmin) {
+			default.bEnablePingCompensation = false;
+			Sender.ClientMessage("Ping Compensation Disabled!");
+		} else {
+			Sender.ClientMessage("Please Log In As Admin!");
+		}
+	} else {
+		Sender.ClientMessage("Unknown UTPlus Command:"@C);
+	}
+}
+
 function Mutate(string MutateString, PlayerPawn Sender) {
 	if (Left(MutateString, 6) ~= "UTPlus") {
 		MutateString = class'StringUtils'.static.Trim(Mid(MutateString, 6, Len(MutateString)));
-		if (MutateString ~= "version") {
-			Sender.ClientMessage(class'StringUtils'.static.GetPackage());
-		} else if (MutateString ~= "EnablePingCompensation") {
-			if (Sender.PlayerReplicationInfo.bAdmin) {
-				default.bEnablePingCompensation = true;
-				Sender.ClientMessage("Ping Compensation Enabled!");
-			} else {
-				Sender.ClientMessage("Please Log In As Admin!");
-			}
-		} else if (MutateString ~= "DisablePingCompensation") {
-			if (Sender.PlayerReplicationInfo.bAdmin) {
-				default.bEnablePingCompensation = false;
-				Sender.ClientMessage("Ping Compensation Disabled!");
-			} else {
-				Sender.ClientMessage("Please Log In As Admin!");
-			}
-		} else {
-			Sender.ClientMessage("Unknown UTPlus Command:"@MutateString);
-		}
+		HandleMutateComand(MutateString, Sender);
 	} else {
 		super.Mutate(MutateString, Sender);
 	}
