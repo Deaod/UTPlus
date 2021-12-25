@@ -1,9 +1,19 @@
-class UTPlus extends Engine.Mutator
+class UTPlus extends Mutator
     config(UTPlus);
 
 var config bool bEnablePingCompensation;
 
 var UTPlusDummy CompDummies;
+
+function UTPlusDummy FindDummy(Pawn P) {
+	local UTPlusDummy D;
+
+	for (D = CompDummies; D != none; D = D.Next)
+		if (D.Actual == P)
+			return D;
+
+	return none;
+}
 
 function ModifyLogin(
 	out class<PlayerPawn> SpawnClass,
@@ -20,14 +30,17 @@ function ModifyLogin(
 	}
 }
 
-function CheckDummyLife(UTPlusDummy D, out UTPlusDummy Ref) {
-	if (D == none) return;
+function ModifyPlayer(Pawn P) {
+	local UTPlusDummy D;
 
-	if (D.Actual.bDeleteMe) {
-		Ref = D.Next;
-		CheckDummyLife(Ref, Ref);
-	} else {
-		CheckDummyLife(D.Next, D.Next);
+	super.ModifyPlayer(P);
+
+	D = FindDummy(P);
+	if (D == none) {
+		D = Spawn(class'UTPlusDummy');
+		D.Actual = P;
+		D.Next = CompDummies;
+		CompDummies = D;
 	}
 }
 
@@ -39,22 +52,7 @@ function TickPawns(float DeltaTime) {
 	if (Role != ROLE_Authority)
 		return;
 
-	CheckDummyLife(CompDummies, CompDummies);
-
 	for (P = Level.PawnList; P != none; P = P.NextPawn) {
-		if (P.IsA('Spectator') == false) {
-			for (D = CompDummies; D != none; D = D.Next)
-				if (D.Actual == P)
-					break;
-
-			if (D == none) {
-				D = Spawn(class'UTPlusDummy');
-				D.Actual = P;
-				D.Next = CompDummies;
-				CompDummies = D;
-			}
-		}
-
 		if (P.RemoteRole == ROLE_AutonomousProxy) {
 			PP = UTPlusPlayer(P);
 			if (PP != none) {
@@ -72,7 +70,9 @@ function CompensateFor(int Ping) {
 	local UTPlusDummy D;
 
 	for (D = CompDummies; D != none; D = D.Next) {
-		if (D.Actual.Health > 0 &&
+		if (D.Actual != none &&
+			D.Actual.Health > 0 &&
+			D.Actual.PlayerReplicationInfo != none &&
 			D.Actual.PlayerReplicationInfo.bIsSpectator == false &&
 			D.Actual.bHidden == false &&
 			D.Actual.bCollideActors == true
