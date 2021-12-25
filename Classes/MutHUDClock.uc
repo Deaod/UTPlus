@@ -79,10 +79,8 @@ simulated function DrawTime(ChallengeHUD H, Canvas C) {
 	Min = Seconds / 60;
 	Sec = Seconds % 60;
 
-	if (Min >= 200)
+	if (Min >= 100)
 		XL = 25; // extra full 7-Seg char
-	else if (Min >= 100)
-		XL = 15; // extra 1 as 7-Seg char
 	else
 		XL = 0;
 
@@ -105,22 +103,19 @@ simulated function DrawTime(ChallengeHUD H, Canvas C) {
 	}
 
 	C.SetPos(X,Y);
-	C.DrawTile(Texture'HUDClockBackground', 128*H.Scale + XL * H.Scale, 64*H.Scale, 0, 0, 128.0, 64.0);
+	C.DrawTile(Texture'HUDClockBackground', 128*H.Scale + XL*H.Scale, 64*H.Scale, 0, 0, 128.0, 64.0);
 
 	C.Style = H.Style;
 	if (H.Opacity > 8 || H.Level.bHighDetailMode == false)
 		C.Style = ERenderStyle.STY_Normal;
 	C.DrawColor = H.WhiteColor;
 
-	X += XL * H.Scale;
-
 	FullSize = CharXScaled * 4 + 12 * H.Scale; //At least 4 digits and : (extra size not counted)
 
 	C.SetPos( X + 64 * H.Scale, Y + 12 * H.Scale);
 	C.CurX -= (FullSize / 2);
 	if (Min >= 100) {
-		C.CurX -= XL * H.Scale;
-		C.DrawTile(Texture'BotPack.HudElements1', H.Scale*XL, CharYScaled, ((Min/100)%10)*CharX + (CharX - XL), 0, XL, CharY);
+		C.DrawTile(Texture'BotPack.HudElements1', CharXScaled, CharYScaled, ((Min/100)%10)*CharX, 0, CharX, CharY);
 		Min = Min%100;
 	}
 	C.DrawTile(Texture'BotPack.HudElements1', CharXScaled, CharYScaled, (Min/10)*CharX, 0, CharX, CharY);
