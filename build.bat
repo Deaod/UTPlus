@@ -13,7 +13,7 @@ for /f "delims=" %%X IN ('dir /B /A /S *') DO (
 
 :FoundPkgName
 
-set MAKEINI=%BUILD_DIR%Build\Temp\make.ini
+set MAKEINI="%BUILD_DIR%Build\Temp\make.ini"
 set DEPENDENCIES=Core Engine Editor UWindow Fire IpDrv UWeb UBrowser UnrealShare UnrealI UMenu Botpack UTMenu UTBrowser
 call :GenerateMakeIni %MAKEINI% %DEPENDENCIES% %PACKAGE_NAME%
 
