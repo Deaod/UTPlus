@@ -1,18 +1,20 @@
-class MutAutoDemo extends Mutator;
+class MutAutoDemo extends Mutator
+	config;
 
 var Object SettingsHelper;
 var AutoDemoSettings Settings;
 
-var bool bForceRecord;
+var config bool bForceRecord;
 var bool bGameStarted;
+var bool bStartForceRecord;
 
 var PlayerPawn LocalPlayer;
 var AutoDemoLevelBase LevelBase;
 
 replication {
-	reliable if (Role==ROLE_Authority)
-		bForceRecord,
-		bGameStarted;
+	reliable if (Role == ROLE_Authority)
+		bGameStarted,
+		bStartForceRecord;
 }
 
 simulated final function InitSettings() {
@@ -249,13 +251,13 @@ state auto WaitingForStart {
 
 		if (bGameStarted) {
 			if (Level.NetMode != NM_Client)
-				bForceRecord = Settings.bForceRecord;
+				bStartForceRecord = bForceRecord;
 
 			if (LevelBase == none)
 				SetPropertyText("LevelBase", GetPropertyText("XLevel"));
 
 			if ((LevelBase == none || LevelBase.DemoRecDriver == none) &&
-				bGameStarted && (Settings.bEnable || (Level.NetMode != NM_DedicatedServer && bForceRecord))
+				bGameStarted && (Settings.bEnable || (Level.NetMode != NM_DedicatedServer && bStartForceRecord))
 			) {
 				StartDemoRec();
 			}
@@ -287,6 +289,8 @@ state Done {
 }
 
 defaultproperties {
+	bForceRecord=False
+
 	bAlwaysRelevant=True
 	RemoteRole=ROLE_SimulatedProxy
 }
