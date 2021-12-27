@@ -1,4 +1,4 @@
-class MutAutoPause extends HUDMutator;
+class MutAutoPause extends Mutator;
 
 var Mutator WarmupMutator;
 var bool bWarmupMutatorSearchDone;
@@ -59,15 +59,7 @@ function CheckAutoPause() {
 	}
 }
 
-auto state Initial {
-Begin:
-	Sleep(0);
-	if (Level.NetMode != NM_Client) {
-		GoToState('Warmup');
-	}
-}
-
-state Warmup {
+auto state Warmup {
 	event Tick(float DeltaTime) {
 		if (IsInWarmup() == false)
 			GoToState('Play');
