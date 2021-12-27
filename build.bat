@@ -55,6 +55,15 @@ popd
 endlocal
 exit /B 1
 
+:: GenerateMakeIni
+::  Generates an INI file for use with 'ucc make'
+:: 
+:: Usage:
+::  call :GenerateMakeIni IniPath Packages...
+::   IniPath is where to generate the ini to
+::   Packages... is a variadic list of Packages (up to 254)
+::    Usually the last Package is the one that you are trying to compile
+::    If Package A depends on Package B, then B must appear before A in this list.
 :GenerateMakeIni
     if not exist %1 mkdir %~dp1
     call :GenerateMakeIniPreamble %1
@@ -66,6 +75,9 @@ exit /B 1
 
     call :GenerateMakeIniPostscript %1
 exit /B %ERRORLEVEL%
+
+:: It is important to not have spaces before the >>.
+:: Spaces will be part of the names UT parses from the INI.
 
 :GenerateMakeIniPreamble
     echo ; Generated>%1
