@@ -47,7 +47,6 @@ function ModifyPlayer(Pawn P) {
 function TickPawns(float DeltaTime) {
 	local Pawn P;
 	local UTPlusPlayer PP;
-	local UTPlusDummy D;
 
 	if (Role != ROLE_Authority)
 		return;
