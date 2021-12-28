@@ -1,5 +1,5 @@
 class MutAutoDemo extends Mutator
-	config;
+	config(AutoDemo);
 
 var Object SettingsHelper;
 var AutoDemoSettings Settings;
