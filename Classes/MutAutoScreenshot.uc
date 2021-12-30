@@ -29,7 +29,7 @@ state DoScreenshot {
 
 state Done {
 	simulated event BeginState() {
-		DisableEvent('Tick');
-		DisableEvent('PostRender');
+		Disable('Tick');
+		Disable('PostRender');
 	}
 }
