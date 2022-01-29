@@ -6,6 +6,7 @@ Object=(Name=UTPlus.MutAutoPause,Class=Class,MetaClass=Engine.Mutator,Descriptio
 Object=(Name=UTPlus.MutAutoScreenshot,Class=Class,MetaClass=Engine.Mutator,Description="Auto Screenshot,Automatically takes a screenshot at the end of a match")
 Object=(Name=UTPlus.MutXHairFactory,Class=Class,MetaClass=Engine.Mutator,Description="XHair Factory,Allows drawing of arbitrary crosshairs")
 Object=(Name=UTPlus.MutHitFeedback,Class=Class,MetaClass=Engine.Mutator,Description="Hit Feedback,Provides feedback when players deal damage")
+Object=(Name=UTPlus.MutSmoReMove,Class=Class,MetaClass=Engine.Mutator,Description="Smooth Replicated Movement,Smooths out movement of other (replicated) players")
 Object=(Name=UTPlus.UTPlus,Class=Class,MetaClass=Engine.Mutator,Description="UTPlus,NextGen UT Feeling")
 Object=(Name=UTPlus.MutIGEnhanced,Class=Class,MetaClass=Engine.Mutator,Description="IG Enhanced,InstaGib with more polished mechanics")
 Object=(Name=UTPlus.IGEnhancedRifle,Class=Class,MetaClass=Engine.Weapon)
