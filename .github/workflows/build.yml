@@ -36,7 +36,7 @@ jobs:
           pathTarget: .
 
       - name: Determine Package Name
-        run: echo set PKG_NAME=${{ github.event.repository.name }}>>$GITHUB_ENV
+        run: echo set PKG_NAME=${{ github.event.repository.name }}>>$env:GITHUB_ENV
 
       - name: Checkout UT+
         uses: actions/checkout@v2
