@@ -35,6 +35,9 @@ jobs:
           pathSource: "OldUnreal-UTPatch469b-Windows.zip"
           pathTarget: .
 
+      - name: Determine Package Name
+        run: echo set PKG_NAME=${{ github.event.repository.name }}>>$GITHUB_ENV
+
       - name: Checkout UT+
         uses: actions/checkout@v2
         with:
