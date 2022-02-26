@@ -1,6 +1,18 @@
 @echo off
 setlocal enabledelayedexpansion enableextensions
 set BUILD_DIR=%~dp0
+set BUILD_NOINT=0
+set BUILD_NOUZ=0
+set BUILD_SILENT=0
+
+:LoopParams
+    if /I "%1" EQU "NoInt"  ( set BUILD_NOINT=1 )
+    if /I "%1" EQU "NoUz"   ( set BUILD_NOUZ=1 )
+    if /I "%1" EQU "Silent" ( set BUILD_SILENT=1 )
+    shift /1
+    if [%1] NEQ [] goto LoopParams
+
+echo BUILD_NOINT=%BUILD_NOINT% BUILD_NOUZ=%BUILD_NOUZ% BUILD_SILENT=%BUILD_SILENT%
 
 pushd %BUILD_DIR%
 
@@ -23,21 +35,30 @@ pushd ..\System
 :: New package GUID, No doubts about staleness
 del %PACKAGE_NAME%.u
 
-ucc make -ini=%MAKEINI% -Silent
+if %BUILD_SILENT% == 1 (
+    ucc make -ini=%MAKEINI% -Silent
+) else (
+    ucc make -ini=%MAKEINI%
+)
 
 :: dont do the post-process steps if compilation failed
 if ERRORLEVEL 1 goto compile_failed
 
-:: generate compressed file for redirects
-ucc compress %PACKAGE_NAME%.u
-:: dump localization strings
-ucc dumpint %PACKAGE_NAME%.u
-
 :: copy to release location
 if not exist %BUILD_DIR%System (mkdir %BUILD_DIR%System)
-copy %PACKAGE_NAME%.u     %BUILD_DIR%System >NUL
-copy %PACKAGE_NAME%.u.uz  %BUILD_DIR%System >NUL
-copy %PACKAGE_NAME%.int   %BUILD_DIR%System >NUL
+copy %PACKAGE_NAME%.u %BUILD_DIR%System >NUL
+
+if %BUILD_NOUZ% == 0 (
+    :: generate compressed file for redirects
+    ucc compress %PACKAGE_NAME%.u
+    copy %PACKAGE_NAME%.u.uz %BUILD_DIR%System >NUL
+)
+
+if %BUILD_NOINT% == 0 (
+    :: dump localization strings
+    ucc dumpint %PACKAGE_NAME%.u
+    copy %PACKAGE_NAME%.int %BUILD_DIR%System >NUL
+)
 
 popd
 
