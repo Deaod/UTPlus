@@ -26,7 +26,7 @@ for /f "delims=" %%X IN ('dir /B /A /S *') DO (
 :FoundPkgName
 
 set MAKEINI="%BUILD_DIR%Build\Temp\make.ini"
-set DEPENDENCIES=Core Engine Editor UWindow Fire IpDrv UWeb UBrowser UnrealShare UnrealI UMenu Botpack UTMenu UTBrowser
+set DEPENDENCIES=
 call :GenerateMakeIni %MAKEINI% %DEPENDENCIES% %PACKAGE_NAME%
 
 pushd ..\System
@@ -108,6 +108,22 @@ exit /B %ERRORLEVEL%
     echo.>>%1
     echo [Editor.EditorEngine]>>%1
     echo CacheSizeMegs=32>>%1
+    echo EditPackages=Core>>%1
+    echo EditPackages=Engine>>%1
+    echo EditPackages=Editor>>%1
+    echo EditPackages=UWindow>>%1
+    echo EditPackages=Fire>>%1
+    echo EditPackages=IpDrv>>%1
+    echo EditPackages=UWeb>>%1
+    echo EditPackages=UBrowser>>%1
+    echo EditPackages=UnrealShare>>%1
+    echo EditPackages=UnrealI>>%1
+    echo EditPackages=UMenu>>%1
+    echo EditPackages=Botpack>>%1
+    echo EditPackages=IpServer>>%1
+    echo EditPackages=UTServerAdmin>>%1
+    echo EditPackages=UTMenu>>%1
+    echo EditPackages=UTBrowser>>%1
 exit /B %ERRORLEVEL%
 
 :GenerateMakeIniPostscript
