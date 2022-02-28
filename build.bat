@@ -2,6 +2,7 @@
 setlocal enabledelayedexpansion enableextensions
 set VERBOSE=0
 set BUILD_DIR=%~dp0
+set BUILD_TEMP=%BUILD_DIR%Build\Temp\
 set BUILD_NOINT=0
 set BUILD_NOUZ=0
 set BUILD_SILENT=0
@@ -19,6 +20,7 @@ call :SetPackageName "%~dp0."
 if %VERBOSE% GEQ 1 (
     echo VERBOSE=%VERBOSE%
     echo BUILD_DIR=%BUILD_DIR%
+    echo BUILD_TEMP=%BUILD_TEMP%
     echo BUILD_NOINT=%BUILD_NOINT%
     echo BUILD_NOUZ=%BUILD_NOUZ%
     echo BUILD_SILENT=%BUILD_SILENT%
@@ -27,8 +29,9 @@ if %VERBOSE% GEQ 1 (
 
 pushd "%BUILD_DIR%"
 
-set MAKEINI="%BUILD_DIR%Build\Temp\make.ini"
+set MAKEINI="%BUILD_TEMP%make.ini"
 set DEPENDENCIES=
+
 call :GenerateMakeIni %MAKEINI% %DEPENDENCIES% %PACKAGE_NAME%
 
 pushd ..\System
