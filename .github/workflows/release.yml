@@ -28,6 +28,8 @@ jobs:
           pathSource: "OldUnreal-UTPatch469b-Windows.zip"
           pathTarget: .
 
+      - run: echo ("${{ toJSON(env) }}")
+
       - name: Determine Package Name
         run: |
           if ("${{ github.ref_type }}" -eq "tag") {
