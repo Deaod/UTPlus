@@ -64,10 +64,15 @@ jobs:
 
       - name: Create Release Asset
         run: >
-          7z a -tzip -- ${{ env.PKG_NAME }}.zip
-          ${{ env.PKG_NAME }}/System/
-          ${{ env.PKG_NAME }}/LICENSE
-          ${{ env.PKG_NAME }}/README.md
+          pushd ${{ env.PKG_NAME }}
+
+          7z a -tzip -- ../${{ env.PKG_NAME }}.zip
+          System/
+          Docs/
+          LICENSE
+          README.md
+
+          popd
 
       - name: Attach Asset To Release
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
