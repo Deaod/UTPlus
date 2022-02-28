@@ -32,7 +32,7 @@ jobs:
         run: |
           if ("${{ github.ref_type }}" -eq "tag") {
             echo ("PKG_NAME=${{ github.event.repository.name }}_"+"${{ github.ref }}".SubString(10)) >> $env:GITHUB_ENV
-          } else if ("${{ github.ref }}".StartsWith("refs/pull/:")) {
+          } elseif ("${{ github.ref }}".StartsWith("refs/pull/:")) {
             echo ("PKG_NAME=${{ github.event.repository.name }}_pr_"+"${{ github.ref }}".SubString(11, $length - 17) >> $env:GITHUB_ENV
           } else {
             echo ("PKG_NAME=${{ github.event.repository.name }}_"+"${{ github.ref }}".SubString(11)+"-"+"${{ env.GITHUB_SHA }}".SubString(0,8)) >> $env:GITHUB_ENV
