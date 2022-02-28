@@ -11,6 +11,9 @@ A mutator that starts recording demos automatically when a match starts. Skips w
 ## [MutAutoPause](Docs/MutAutoPause.md)
 A mutator that automatically pauses a match whenever a player leaves, and resumes play when the game is full again. Also delays any unpausing by a configurable number of seconds.
 
+## [MutAutoScreenshot](Docs/MutAutoScreenshot.md)
+A mutator that automatically takes a screenshot at the end of a match.
+
 ## [MutHitFeedback](Docs/MutHitFeedback.md)
 A mutator that provides audible feedback to player whenever they deal damage. 
 
@@ -19,6 +22,9 @@ Adds a clock to the HUD for all players.
 
 ## [MutIGEnhanced](Docs/MutIGEnhanced.md)
 A replacement for the InstaGibDM mutator. Provides a weapon with more configurable effects.
+
+## [MutSmoReMove](Docs/MutSmoReMove.md)
+A mutator that smoothes out movement of other players on networked clients.
 
 ## [MutWarmup](Docs/MutWarmup.md)
 A mutator to allow play before the match starts. Provides all weapons available on the current map to player upon spawn.
