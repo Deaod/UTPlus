@@ -38,9 +38,9 @@ pushd ..\System
 del %PACKAGE_NAME%.u
 
 if %BUILD_SILENT% == 1 (
-    ucc make -ini=%MAKEINI% -Silent
+    call :Invoke ucc make -ini=%MAKEINI% -Silent
 ) else (
-    ucc make -ini=%MAKEINI%
+    call :Invoke ucc make -ini=%MAKEINI%
 )
 
 :: dont do the post-process steps if compilation failed
@@ -52,13 +52,13 @@ copy %PACKAGE_NAME%.u %BUILD_DIR%System >NUL
 
 if %BUILD_NOUZ% == 0 (
     :: generate compressed file for redirects
-    ucc compress %PACKAGE_NAME%.u
+    call :Invoke ucc compress %PACKAGE_NAME%.u
     copy %PACKAGE_NAME%.u.uz "%BUILD_DIR%System" >NUL
 )
 
 if %BUILD_NOINT% == 0 (
     :: dump localization strings
-    ucc dumpint %PACKAGE_NAME%.u
+    call :Invoke ucc dumpint %PACKAGE_NAME%.u
     copy %PACKAGE_NAME%.int "%BUILD_DIR%System" >NUL
 )
 
@@ -77,6 +77,11 @@ popd
 popd
 endlocal
 exit /B 1
+
+:Invoke
+if %VERBOSE% GEQ 1 echo %*
+%*
+exit /B %ERRORLEVEL%
 
 :SetPackageName
 set PACKAGE_NAME=%~nx1
