@@ -72,7 +72,7 @@ jobs:
   release:
     runs-on: windows-latest
     needs: build
-    if: ${{ github.event_name == "release" }}
+    if: ${{ github.event_name == 'release' }}
 
     steps:
       - name: Download Artifact
