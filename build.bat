@@ -1,29 +1,31 @@
 @echo off
 setlocal enabledelayedexpansion enableextensions
+set VERBOSE=0
 set BUILD_DIR=%~dp0
 set BUILD_NOINT=0
 set BUILD_NOUZ=0
 set BUILD_SILENT=0
 
-:LoopParams
+:ParseArgs
     if /I "%1" EQU "NoInt"  ( set BUILD_NOINT=1 )
     if /I "%1" EQU "NoUz"   ( set BUILD_NOUZ=1 )
     if /I "%1" EQU "Silent" ( set BUILD_SILENT=1 )
+    if /I "%1" EQU "Verbose" ( set /A VERBOSE+=1 )
     shift /1
-    if [%1] NEQ [] goto LoopParams
+    if [%1] NEQ [] goto ParseArgs
 
-echo BUILD_NOINT=%BUILD_NOINT% BUILD_NOUZ=%BUILD_NOUZ% BUILD_SILENT=%BUILD_SILENT%
+call :SetPackageName "%~dp0."
 
-pushd %BUILD_DIR%
-
-for /f "delims=" %%X IN ('dir /B /A /S *') DO (
-	for %%D in ("%%~dpX\.") do (
-		set PACKAGE_NAME=%%~nxD
-		goto FoundPkgName
-	)
+if %VERBOSE% GEQ 1 (
+    echo VERBOSE=%VERBOSE%
+    echo BUILD_DIR=%BUILD_DIR%
+    echo BUILD_NOINT=%BUILD_NOINT%
+    echo BUILD_NOUZ=%BUILD_NOUZ%
+    echo BUILD_SILENT=%BUILD_SILENT%
+    echo PACKAGE_NAME=%PACKAGE_NAME%
 )
 
-:FoundPkgName
+pushd "%BUILD_DIR%"
 
 set MAKEINI="%BUILD_DIR%Build\Temp\make.ini"
 set DEPENDENCIES=
@@ -45,19 +47,19 @@ if %BUILD_SILENT% == 1 (
 if ERRORLEVEL 1 goto compile_failed
 
 :: copy to release location
-if not exist %BUILD_DIR%System (mkdir %BUILD_DIR%System)
+if not exist "%BUILD_DIR%System" (mkdir "%BUILD_DIR%System")
 copy %PACKAGE_NAME%.u %BUILD_DIR%System >NUL
 
 if %BUILD_NOUZ% == 0 (
     :: generate compressed file for redirects
     ucc compress %PACKAGE_NAME%.u
-    copy %PACKAGE_NAME%.u.uz %BUILD_DIR%System >NUL
+    copy %PACKAGE_NAME%.u.uz "%BUILD_DIR%System" >NUL
 )
 
 if %BUILD_NOINT% == 0 (
     :: dump localization strings
     ucc dumpint %PACKAGE_NAME%.u
-    copy %PACKAGE_NAME%.int %BUILD_DIR%System >NUL
+    copy %PACKAGE_NAME%.int "%BUILD_DIR%System" >NUL
 )
 
 popd
@@ -76,6 +78,10 @@ popd
 endlocal
 exit /B 1
 
+:SetPackageName
+set PACKAGE_NAME=%~nx1
+exit /B %ERRORLEVEL%
+
 :: GenerateMakeIni
 ::  Generates an INI file for use with 'ucc make'
 :: 
@@ -86,7 +92,7 @@ exit /B 1
 ::    Usually the last Package is the one that you are trying to compile
 ::    If Package A depends on Package B, then B must appear before A in this list.
 :GenerateMakeIni
-    if not exist %1 mkdir %~dp1
+    if not exist %1 mkdir "%~dp1"
     call :GenerateMakeIniPreamble %1
 
     :GenerateMakeIniNextDependency
@@ -101,7 +107,7 @@ exit /B %ERRORLEVEL%
 :: Spaces will be part of the names UT parses from the INI.
 
 :GenerateMakeIniPreamble
-    echo ; Generated>%1
+    echo ; Generated, DO NOT MODIFY>%1
     echo.>>%1
     echo [Engine.Engine]>>%1
     echo EditorEngine=Editor.EditorEngine>>%1
