@@ -28,7 +28,9 @@ jobs:
           pathSource: "OldUnreal-UTPatch469b-Windows.zip"
           pathTarget: .
 
-      - run: echo ("${{ toJSON(env) }}")
+      - run: |
+          echo ("${{ toJSON(env) }}")
+          echo ("${{ toJSON(github) }}")
 
       - name: Determine Package Name
         run: |
