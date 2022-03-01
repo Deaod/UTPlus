@@ -58,6 +58,17 @@ jobs:
         with:
           path: ${{ env.PKG_NAME }}/
 
+      - name: Rename Localization Files
+        run: |
+          {
+            Get-ChildItem "${{ env.PKG_NAME }}/System/${{ github.event.repository.name }}.*" | ForEach-Object {
+              $OldName = $_.Name
+              $NewName = ($_.Name -replace "${{ github.event.repository.name }}.","${{ env.PKG_NAME }}.")
+              Write-Output $OldName+" -> "+$NewName
+              Rename-Item -Path $_.FullName -NewName $NewName
+            }
+          }
+
       - name: Extract Necessary Resources
         uses: DuckSoft/extract-7z-action@v1.0
         with:
@@ -66,14 +77,6 @@ jobs:
 
       - name: Build ${{ github.event.repository.name }}
         run: ${{ env.PKG_NAME }}/build.bat silent noint
-
-      - name: Rename Localization Files
-        run: |
-          {
-            Get-ChildItem "${{ env.PKG_NAME }}/System/${{ github.event.repository.name }}.*" | Rename-Item -NewName {
-              $_.Name -replace "${{ github.event.repository.name }}.","${{ env.PKG_NAME }}."
-            }
-          }
 
       - name: Save UCC.log
         if: failure()
