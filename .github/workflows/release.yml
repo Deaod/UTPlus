@@ -97,8 +97,7 @@ jobs:
 
       - name: Restore Package Name
         run: |
-          echo ("PKG_NAME=") >> $env:GITHUB_ENV
-          type PackageName >> $env:GITHUB_ENV
+          echo ("PKG_NAME=" + (Get-Content -Path "PackageName")) >> $env:GITHUB_ENV
 
       - name: Download Artifact
         uses: actions/download-artifact@v2
