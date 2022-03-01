@@ -63,8 +63,12 @@ jobs:
           Get-ChildItem "${{ env.PKG_NAME }}/System/${{ github.event.repository.name }}.*" | ForEach-Object {
             $OldName = $_.Name
             $NewName = ($_.Name -replace "${{ github.event.repository.name }}.","${{ env.PKG_NAME }}.")
-            Write-Output $OldName+" -> "+$NewName
-            Rename-Item -Path $_.FullName -NewName $NewName
+            $NewItem = ("${{ env.PKG_NAME }}/System/" + $NewName)
+            Write-Output ($OldName + " -> " + $NewName)
+            Remove-Item $NewItem
+            (Get-Content -Path $_.FullName) | ForEach-Object {
+              ($_ -replace "${{ github.event.repository.name }}.","${{ env.PKG_NAME }}.") >> $NewItem
+            }
           }
 
       - name: Extract Necessary Resources
