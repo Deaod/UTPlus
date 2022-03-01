@@ -4,6 +4,7 @@ Object=(Name=UTPlus.MutWarmup,Class=Class,MetaClass=Engine.Mutator,Description="
 Object=(Name=UTPlus.MutAutoDemo,Class=Class,MetaClass=Engine.Mutator,Description="Auto Demo,Automatically starts recording demos when the match starts")
 Object=(Name=UTPlus.MutAutoPause,Class=Class,MetaClass=Engine.Mutator,Description="Auto Pause,Automatically pauses the game when a player leaves")
 Object=(Name=UTPlus.MutAutoScreenshot,Class=Class,MetaClass=Engine.Mutator,Description="Auto Screenshot,Automatically takes a screenshot at the end of a match")
+Object=(Name=UTPlus.MutPSVis,Class=Class,MetaClass=Engine.Mutator,Description="PlayerStart Visualizer,Reveals where players can spawn on a map")
 Object=(Name=UTPlus.MutXHairFactory,Class=Class,MetaClass=Engine.Mutator,Description="XHair Factory,Allows drawing of arbitrary crosshairs")
 Object=(Name=UTPlus.MutHitFeedback,Class=Class,MetaClass=Engine.Mutator,Description="Hit Feedback,Provides feedback when players deal damage")
 Object=(Name=UTPlus.MutSmoReMove,Class=Class,MetaClass=Engine.Mutator,Description="Smooth Replicated Movement,Smooths out movement of other (replicated) players")
