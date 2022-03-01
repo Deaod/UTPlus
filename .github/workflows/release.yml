@@ -42,6 +42,17 @@ jobs:
             echo ("PKG_NAME=${{ github.event.repository.name }}_"+"${{ github.ref }}".SubString(11)+"-"+"${{ github.sha }}".SubString(0,8)) >> $env:GITHUB_ENV
           }
 
+      - name: Save Package Name In File
+        run: echo ("${{ env.PKG_NAME }}") >> PackageName
+
+      - name: Create Package Name Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: PackageName
+          path: PackageName
+          retention-days: 1
+          if-no-files-found: error
+
       - name: Checkout ${{ github.event.repository.name }}
         uses: actions/checkout@v2
         with:
@@ -79,6 +90,16 @@ jobs:
     if: ${{ github.event_name == 'release' }}
 
     steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: PackageName
+
+      - name: Restore Package Name
+        run: |
+          echo ("PKG_NAME=") >> $env:GITHUB_ENV
+          type PackageName >> $env:GITHUB_ENV
+
       - name: Download Artifact
         uses: actions/download-artifact@v2
         with:
