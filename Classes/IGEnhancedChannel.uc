@@ -97,7 +97,7 @@ simulated final function PlayBeam(
 	if ( NumPoints < 1 )
 		return;
 	SmokeRotation = rotator(DVector);
-	SmokeRotation.roll = Rand(65535);
+	SmokeRotation.Roll = Rand(0xFFFF);
 
 	if (Settings.BeamType == BT_None) return;
 	if (Settings.bBeamHideOwn &&
