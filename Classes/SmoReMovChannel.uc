@@ -11,6 +11,12 @@ replication {
 		ReplLoc;
 }
 
+simulated function int Round(float F) {
+	if (F >= 0)
+		return int(F + 0.5);
+	return int(F - 0.5);
+}
+
 simulated event Tick(float DeltaTime) {
 	super.Tick(DeltaTime);
 	
@@ -23,9 +29,9 @@ simulated event Tick(float DeltaTime) {
 	} else {
 		if (Owner != none) {
 			// this is done to avoid sending unnecessary location updates
-			ReplLoc.X = int(Owner.Location.X + 0.5);
-			ReplLoc.Y = int(Owner.Location.Y + 0.5);
-			ReplLoc.Z = int(Owner.Location.Z + 0.5);
+			ReplLoc.X = Round(Owner.Location.X);
+			ReplLoc.Y = Round(Owner.Location.Y);
+			ReplLoc.Z = Round(Owner.Location.Z);
 		}
 	}
 }
