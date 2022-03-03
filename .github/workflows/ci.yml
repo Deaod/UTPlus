@@ -74,7 +74,7 @@ jobs:
           pathTarget: .
 
       - name: Build ${{ github.event.repository.name }}
-        run: ${{ env.PKG_NAME }}/build.bat silent noint
+        run: ${{ env.PKG_NAME }}/Build.bat silent noint
 
       - name: Save UCC.log
         if: failure()

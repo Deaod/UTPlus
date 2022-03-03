@@ -5,7 +5,7 @@
 :: 
 :: Options:
 ::   BuildDir <directory> - Manually specify the root directory of the package
-::     Example: C:\UT99\MyPackage\Build\build.bat BuildDir "C:\UT99\MyPackage\"
+::     Example: C:\UT99\MyPackage\Build\Build.bat BuildDir "C:\UT99\MyPackage\"
 ::   NoInt - Does not automatically generate a .int for the package
 ::   NoUz - Does not automatically generate a .u.uz for the package
 ::   Silent - Suppresses compatibility warnings, automatically resolves them
@@ -36,7 +36,7 @@
 ::      │       └─MyDependencyTex.utx
 ::      ├─Classes\
 ::      │ └─MyClass.uc
-::      └─build.bat
+::      └─Build.bat
 :: 
 :: A non-exhaustive list of reason you depend on a package:
 ::   - When you extend a class of another package
