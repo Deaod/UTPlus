@@ -15,7 +15,8 @@
 :: Dependencies:
 ::   There is a way to specify dependencies.
 ::   First, you need to add them to the list of dependencies
-::    below.
+::    in BuildSettings.bat, which can be found next to this
+::    file.
 ::   Second, you need to add a new folder under
 ::    Build/Dependencies/ with the name of the dependency.
 ::   Third, place inside it all resources for the dependency
@@ -36,7 +37,8 @@
 ::      │       └─MyDependencyTex.utx
 ::      ├─Classes\
 ::      │ └─MyClass.uc
-::      └─Build.bat
+::      ├─Build.bat
+::      └─BuildSettings.bat
 :: 
 :: A non-exhaustive list of reason you depend on a package:
 ::   - When you extend a class of another package
@@ -87,11 +89,7 @@
 @echo off
 setlocal enabledelayedexpansion enableextensions
 
-:: List of dependencies, add your own here.
-:: Do not use linebreaks to separate dependencies. Always use spaces.
-:: Order is important. If package A depends on package B, then B must
-:: appear in the list before A.
-set DEPENDENCIES=
+call "%~dp0BuildSettings.bat"
 
 set VERBOSE=0
 set BUILD_DIR=%~dp0
