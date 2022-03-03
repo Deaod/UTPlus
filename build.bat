@@ -172,14 +172,25 @@ if %BUILD_NOINT% == 0 (
     copy %PACKAGE_NAME%.int "%BUILD_DIR%System" >NUL
 )
 
-
 :: The reason we dont call PostBuildHook is because if youre using NoBind, this
 :: is not the actual build of the package. This just generates header files for
 :: C++. These are then used to build the native library thats bound to the
 :: package, which can (and should) then be built without NoBind.
 if %BUILD_NOBIND% == 0 (
     if exist "%~dp0PostBuildHook.bat" (
+        :: isolate PostBuildHook
+        setlocal
+        
         call "%~dp0PostBuildHook.bat"
+        
+        endlocal
+        
+        :: restore echo state
+        if %VERBOSE% GEQ 3 (
+            @echo on
+        ) else (
+            @echo off
+        )
     )
 )
 
