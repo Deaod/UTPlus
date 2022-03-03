@@ -15,7 +15,7 @@ DemoChar=
 ### bEnable
 **Type: bool**  
 
-If `True`, automatically record demos on game start. If `False`, do nothing unless forced by server to record. If
+If `True`, automatically record demos on game start. If `False`, do nothing unless forced by server to record.
 
 ### DemoMask
 **Type: string**  
