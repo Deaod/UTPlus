@@ -281,7 +281,7 @@ exit /B %ERRORLEVEL%
     if exist "%BUILD_DIR%Build/Dependencies/%1/" ( 
         copy "%BUILD_DIR%Build/Dependencies/%1/*" .. >NUL
     ) else (
-        echo "Could not locate dependency '%1'"
+        echo "Could not locate dependency '%1' in '%BUILD_DIR%Build/Dependencies/'"
     )
     shift /1
     goto PrepareDependencies
