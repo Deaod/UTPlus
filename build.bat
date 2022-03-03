@@ -9,20 +9,29 @@ set DEPENDENCIES=
 
 set VERBOSE=0
 set BUILD_DIR=%~dp0
-set BUILD_TEMP=%BUILD_DIR%Build\Temp\
 set BUILD_NOINT=0
 set BUILD_NOUZ=0
 set BUILD_SILENT=0
 
 :ParseArgs
-    if /I "%1" EQU "NoInt"  ( set BUILD_NOINT=1 )
-    if /I "%1" EQU "NoUz"   ( set BUILD_NOUZ=1 )
-    if /I "%1" EQU "Silent" ( set BUILD_SILENT=1 )
-    if /I "%1" EQU "Verbose" ( set /A VERBOSE+=1 )
+    if /I "%1" EQU "NoInt"    ( set BUILD_NOINT=1 )
+    if /I "%1" EQU "NoUz"     ( set BUILD_NOUZ=1 )
+
+    if /I "%1" EQU "Silent"   ( set BUILD_SILENT=1 )
+
+    if /I "%1" EQU "Verbose"  ( set /A VERBOSE+=1 )
+    if /I "%1" EQU "BuildDir" (
+        set BUILD_DIR=%~f2
+        shift /1
+    )
     shift /1
     if [%1] NEQ [] goto ParseArgs
 
-call :SetPackageName "%~dp0."
+if %VERBOSE% GEQ 3 echo on
+
+call :SetPackageName "%BUILD_DIR%."
+
+set BUILD_TEMP=%BUILD_DIR%Build\Temp\
 
 if %VERBOSE% GEQ 1 (
     echo VERBOSE=%VERBOSE%
