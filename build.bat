@@ -38,7 +38,7 @@ pushd ..\System
 
 :: make sure to always rebuild the package
 :: New package GUID, No doubts about staleness
-del %PACKAGE_NAME%.u
+if exist "%PACKAGE_NAME%.u" del %PACKAGE_NAME%.u
 
 if %BUILD_SILENT% == 1 (
     call :Invoke ucc make -ini=%MAKEINI% -Silent
