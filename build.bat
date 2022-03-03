@@ -47,7 +47,7 @@ pushd "%BUILD_DIR%..\System"
 
 set MAKEINI="%BUILD_TEMP%make.ini"
 call :GenerateMakeIni %MAKEINI% %DEPENDENCIES% %PACKAGE_NAME%
-
+call :PrepareDependencies %DEPENDENCIES%
 
 :: make sure to always rebuild the package
 :: New package GUID, No doubts about staleness
@@ -164,3 +164,15 @@ exit /B %ERRORLEVEL%
 :GenerateMakeIniDependency
     echo EditPackages=%2>>%1
 exit /B %ERRORLEVEL%
+
+:PrepareDependencies
+    if [%1] EQU [] exit /B %ERRORLEVEL%
+    if exist "%BUILD_DIR%Build/Dependencies/%1/" ( 
+        copy "%BUILD_DIR%Build/Dependencies/%1/*" .. >NUL
+    ) else (
+        echo "Could not locate dependency '%1'"
+    )
+    shift /1
+    goto PrepareDependencies
+exit /B %ERRORLEVEL%
+
