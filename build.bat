@@ -1,3 +1,89 @@
+:: UT99 Build System For Windows
+:: 
+:: Expects to have been placed in the root directory of the
+:: package you want to build.
+:: 
+:: Options:
+::   BuildDir <directory> - Manually specify the root directory of the package
+::     Example: C:\UT99\MyPackage\Build\build.bat BuildDir "C:\UT99\MyPackage\"
+::   NoInt - Does not automatically generate a .int for the package
+::   NoUz - Does not automatically generate a .u.uz for the package
+::   Silent - Suppresses compatibility warnings, automatically resolves them
+::   NoBind - Generates C++ header files for packages with native code
+::   Verbose - Can be used multiple times. More verbose -> More output from script
+:: 
+:: Dependencies:
+::   There is a way to specify dependencies.
+::   First, you need to add them to the list of dependencies
+::    below.
+::   Second, you need to add a new folder under
+::    Build/Dependencies/ with the name of the dependency.
+::   Third, place inside it all resources for the dependency
+::    in the same folder structure the game expects packages
+::    to be in. That means .u files need to be inside a
+::    System subfolder, .utx in a Textures subfolder, etc.
+::   Example:
+::    Lets say you have a package called MyPackage which
+::    depends on a package called MyDependency. Here is what
+::    the (simplified) folder structure should look like:
+::      C:\UT99\MyPackage\
+::      ├─Build\
+::      │ └─Dependencies\
+::      │   └─MyDependency\
+::      │     ├─System\
+::      │     │ └─MyDependency.u
+::      │     └─Textures\
+::      │       └─MyDependencyTex.utx
+::      ├─Classes\
+::      │ └─MyClass.uc
+::      └─build.bat
+:: 
+:: A non-exhaustive list of reason you depend on a package:
+::   - When you extend a class of another package
+::      Example:
+::       class MyClass extends MyDependency.CoolBaseClass;
+::   - When you declare a variable/member of a type from
+::     your dependency within one of your classes
+::      Example:
+::       var MyDependency.CoolClass MyVar;
+::   - When you cast to a class from another package
+::      Example:
+::       MyVar = CoolClass(SomeActor);
+::   - When you refer to an object from a dependency
+::      Examples:
+::       SomeClass = class'MyDependency.CoolClass';
+::       SomeTex = Texture'MyDependency.CoolTexture';
+::       SomeMesh = LodMesh'MyDependency.CoolMesh';
+:: 
+:: Be careful about what packages you depend on.
+:: - Server admins need to install them together with your
+::    package, which also means they need to redirect them
+::    for people to download. More work for server admins
+::    slows adoption of your package by them.
+:: - Packages without obvious versioning might have multiple
+::    different and incompatible versions using the same
+::    name and being depended on by various other mods.
+:: - Server admins might run into problems where your
+::    package depends on version 2 of MyDependency, but
+::    another package the server admin wants to use depends
+::    on version 1 of MyDependency, which cant be resolved.
+:: - As a consequence, make sure every package you release
+::    has version information in the name, especially if you
+::    expect to be depended on by someone else.
+::
+:: PostBuildHook:
+::   PostBuildHook.bat is executed after a successful build
+::    if it exists next to this file. This is intended for
+::    use with automation, like, for example, updating a
+::    server with the shiny new version of MyPackage that
+::    was just built.
+::   For this reason PostBuildHook.bat should not be
+::    archived in version control or shared with others.
+::
+::   If the NoBind option is specified, PostBuildHook will
+::    never be called because NoBind is an intermediary step
+::    towards the final package.
+::
 @echo off
 setlocal enabledelayedexpansion enableextensions
 
