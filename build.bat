@@ -12,12 +12,16 @@ set BUILD_DIR=%~dp0
 set BUILD_NOINT=0
 set BUILD_NOUZ=0
 set BUILD_SILENT=0
+set BUILD_NOBIND=0
+set BUILD_BYTEHAX=0
 
 :ParseArgs
     if /I "%1" EQU "NoInt"    ( set BUILD_NOINT=1 )
     if /I "%1" EQU "NoUz"     ( set BUILD_NOUZ=1 )
 
     if /I "%1" EQU "Silent"   ( set BUILD_SILENT=1 )
+    if /I "%1" EQU "NoBind"   ( set BUILD_NOBIND=1 )
+    if /I "%1" EQU "ByteHax"  ( set BUILD_BYTEHAX=1 )
 
     if /I "%1" EQU "Verbose"  ( set /A VERBOSE+=1 )
     if /I "%1" EQU "BuildDir" (
@@ -40,6 +44,8 @@ if %VERBOSE% GEQ 1 (
     echo BUILD_NOINT=%BUILD_NOINT%
     echo BUILD_NOUZ=%BUILD_NOUZ%
     echo BUILD_SILENT=%BUILD_SILENT%
+    echo BUILD_NOBIND=%BUILD_NOBIND%
+    echo BUILD_BYTEHAX=%BUILD_BYTEHAX%
     echo PACKAGE_NAME=%PACKAGE_NAME%
 )
 
@@ -53,11 +59,13 @@ call :PrepareDependencies %DEPENDENCIES%
 :: New package GUID, No doubts about staleness
 if exist "%PACKAGE_NAME%.u" del %PACKAGE_NAME%.u
 
-if %BUILD_SILENT% == 1 (
-    call :Invoke ucc make -ini=%MAKEINI% -Silent
-) else (
-    call :Invoke ucc make -ini=%MAKEINI%
-)
+set MAKE_PARAMS=-ini=%MAKEINI%
+
+if %BUILD_SILENT% == 1 set MAKE_PARAMS=!MAKE_PARAMS! -Silent
+if %BUILD_NOBIND% == 1 set MAKE_PARAMS=!MAKE_PARAMS! -NoBind
+if %BUILD_BYTEHAX% == 1 set MAKE_PARAMS=!MAKE_PARAMS! -ByteHax
+
+call :Invoke ucc make %MAKE_PARAMS%
 
 :: dont do the post-process steps if compilation failed
 if ERRORLEVEL 1 goto compile_failed
@@ -79,7 +87,15 @@ if %BUILD_NOINT% == 0 (
 )
 
 
-if exist "PostBuildHook.bat" call "PostBuildHook.bat"
+:: The reason we dont call PostBuildHook is because if youre using NoBind, this
+:: is not the actual build of the package. This just generates header files for
+:: C++. These are then used to build the native library thats bound to the
+:: package, which can (and should) then be built without NoBind.
+if %BUILD_NOBIND% == 0 (
+    if exist "%~dp0PostBuildHook.bat" (
+        call "%~dp0PostBuildHook.bat"
+    )
+)
 
 echo [Finished at %Date% %Time%]
 
