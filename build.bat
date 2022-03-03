@@ -27,14 +27,13 @@ if %VERBOSE% GEQ 1 (
     echo PACKAGE_NAME=%PACKAGE_NAME%
 )
 
-pushd "%BUILD_DIR%"
+pushd "%BUILD_DIR%..\System"
 
 set MAKEINI="%BUILD_TEMP%make.ini"
 set DEPENDENCIES=
 
 call :GenerateMakeIni %MAKEINI% %DEPENDENCIES% %PACKAGE_NAME%
 
-pushd ..\System
 
 :: make sure to always rebuild the package
 :: New package GUID, No doubts about staleness
@@ -65,7 +64,6 @@ if %BUILD_NOINT% == 0 (
     copy %PACKAGE_NAME%.int "%BUILD_DIR%System" >NUL
 )
 
-popd
 
 if exist "PostBuildHook.bat" call "PostBuildHook.bat"
 
@@ -76,7 +74,6 @@ endlocal
 exit /B 0
 
 :compile_failed
-popd
 popd
 endlocal
 exit /B 1
