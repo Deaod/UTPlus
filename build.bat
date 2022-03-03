@@ -1,5 +1,12 @@
 @echo off
 setlocal enabledelayedexpansion enableextensions
+
+:: List of dependencies, add your own here.
+:: Do not use linebreaks to separate dependencies. Always use spaces.
+:: Order is important. If package A depends on package B, then B must
+:: appear in the list before A.
+set DEPENDENCIES=
+
 set VERBOSE=0
 set BUILD_DIR=%~dp0
 set BUILD_TEMP=%BUILD_DIR%Build\Temp\
@@ -30,8 +37,6 @@ if %VERBOSE% GEQ 1 (
 pushd "%BUILD_DIR%..\System"
 
 set MAKEINI="%BUILD_TEMP%make.ini"
-set DEPENDENCIES=
-
 call :GenerateMakeIni %MAKEINI% %DEPENDENCIES% %PACKAGE_NAME%
 
 
