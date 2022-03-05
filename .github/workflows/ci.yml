@@ -63,7 +63,7 @@ jobs:
             Write-Output ($OldName + " -> " + $NewName)
             if (Test-Path -Path $NewItem) { Remove-Item $NewItem }
             (Get-Content -Path $_.FullName) | ForEach-Object {
-              ($_ -replace "${{ github.event.repository.name }}.","${{ env.PKG_NAME }}.") >> $NewItem
+              ($_ -replace "${{ github.event.repository.name }}\.","${{ env.PKG_NAME }}.") >> $NewItem
             }
             Remove-Item $_
           }
