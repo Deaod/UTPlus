@@ -61,10 +61,11 @@ jobs:
             $NewName = ($_.Name -replace "${{ github.event.repository.name }}.","${{ env.PKG_NAME }}.")
             $NewItem = ("${{ env.PKG_NAME }}/System/" + $NewName)
             Write-Output ($OldName + " -> " + $NewName)
-            Remove-Item $NewItem
+            if (Test-Path -Path $NewItem) { Remove-Item $NewItem }
             (Get-Content -Path $_.FullName) | ForEach-Object {
               ($_ -replace "${{ github.event.repository.name }}.","${{ env.PKG_NAME }}.") >> $NewItem
             }
+            Remove-Item $_
           }
 
       - name: Extract Necessary Resources
