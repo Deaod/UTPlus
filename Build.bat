@@ -225,10 +225,12 @@ exit /B %ERRORLEVEL%
     if not exist %1 mkdir "%~dp1"
     call :GenerateMakeIniPreamble %1
 
-    :GenerateMakeIniNextDependency
+    :GenerateMakeIni_Loop
+        if [%2] NEQ [] goto GenerateMakeIni_EndLoop
         call :GenerateMakeIniDependency %1 %2
         shift /2
-        if [%2] NEQ [] goto GenerateMakeIniNextDependency
+        goto GenerateMakeIni_Loop
+    :GenerateMakeIni_EndLoop
 
     call :GenerateMakeIniPostscript %1
 exit /B %ERRORLEVEL%
