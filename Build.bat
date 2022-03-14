@@ -89,17 +89,20 @@
 @echo off
 setlocal enabledelayedexpansion enableextensions
 
-call "%~dp0BuildSettings.bat"
-
-set VERBOSE=0
 set BUILD_DIR=%~dp0
 set BUILD_NOINT=0
 set BUILD_NOUZ=0
 set BUILD_SILENT=0
 set BUILD_NOBIND=0
 set BUILD_BYTEHAX=0
+set VERBOSE=0
 
 :ParseArgs
+    if /I "%1" EQU "BuildDir" (
+        set BUILD_DIR=%~f2
+        shift /1
+    )
+
     if /I "%1" EQU "NoInt"    ( set BUILD_NOINT=1 )
     if /I "%1" EQU "NoUz"     ( set BUILD_NOUZ=1 )
 
@@ -108,21 +111,20 @@ set BUILD_BYTEHAX=0
     if /I "%1" EQU "ByteHax"  ( set BUILD_BYTEHAX=1 )
 
     if /I "%1" EQU "Verbose"  ( set /A VERBOSE+=1 )
-    if /I "%1" EQU "BuildDir" (
-        set BUILD_DIR=%~f2
-        shift /1
-    )
+    
     shift /1
     if [%1] NEQ [] goto ParseArgs
 
 if %VERBOSE% GEQ 3 echo on
 
 call :SetPackageName "%BUILD_DIR%."
+call :Hook "%~dp0BuildSettings.bat"
 
 set BUILD_TEMP=%BUILD_DIR%Build\Temp\
 
 if %VERBOSE% GEQ 1 (
-    echo VERBOSE=%VERBOSE%
+    echo PACKAGE_NAME=%PACKAGE_NAME%
+    echo DEPENDENCIES=%DEPENDENCIES%
     echo BUILD_DIR=%BUILD_DIR%
     echo BUILD_TEMP=%BUILD_TEMP%
     echo BUILD_NOINT=%BUILD_NOINT%
@@ -130,7 +132,7 @@ if %VERBOSE% GEQ 1 (
     echo BUILD_SILENT=%BUILD_SILENT%
     echo BUILD_NOBIND=%BUILD_NOBIND%
     echo BUILD_BYTEHAX=%BUILD_BYTEHAX%
-    echo PACKAGE_NAME=%PACKAGE_NAME%
+    echo VERBOSE=%VERBOSE%
 )
 
 pushd "%BUILD_DIR%..\System"
@@ -175,21 +177,7 @@ if %BUILD_NOINT% == 0 (
 :: C++. These are then used to build the native library thats bound to the
 :: package, which can (and should) then be built without NoBind.
 if %BUILD_NOBIND% == 0 (
-    if exist "%~dp0PostBuildHook.bat" (
-        :: isolate PostBuildHook
-        setlocal
-        
-        call "%~dp0PostBuildHook.bat"
-        
-        endlocal
-        
-        :: restore echo state
-        if %VERBOSE% GEQ 3 (
-            @echo on
-        ) else (
-            @echo off
-        )
-    )
+    call :Hook "%~dp0PostBuildHook.bat"
 )
 
 echo [Finished at %Date% %Time%]
@@ -202,6 +190,20 @@ exit /B 0
 popd
 endlocal
 exit /B 1
+
+:Hook
+if exist %1 (
+    @setlocal enabledelayedexpansion enableextensions
+    @call %1
+    @endlocal
+    @if %VERBOSE% GEQ 3 (
+        @echo on
+    ) else (
+        @echo off
+    )
+    
+)
+exit /B %ERRORLEVEL%
 
 :Invoke
 if %VERBOSE% GEQ 1 echo %*
