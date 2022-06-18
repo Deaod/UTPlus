@@ -71,11 +71,11 @@ jobs:
       - name: Extract Necessary Resources
         uses: DuckSoft/extract-7z-action@v1.0
         with:
-          pathSource: ${{ env.PKG_NAME }}/Build/BuildEnv.zip
+          pathSource: "${{ env.PKG_NAME }}/Build/BuildEnv.zip"
           pathTarget: .
 
       - name: Build ${{ github.event.repository.name }}
-        run: ${{ env.PKG_NAME }}/Build.bat silent noint
+        run: "${{ env.PKG_NAME }}/Build.bat" silent noint nouz
 
       - name: Save UCC.log
         if: failure()
@@ -84,15 +84,31 @@ jobs:
           name: ucc-output
           path: System/UCC.log
 
+      - name: Collect Release Files
+        run: |
+          New-Item -Path "Release/System" -ItemType Directory
+
+          Copy-Item -Path "${{ env.PKG_NAME }}/System/${{ env.PKG_NAME }}.int" -Destination "Release/System"
+          Copy-Item -Path "${{ env.PKG_NAME }}/System/${{ env.PKG_NAME }}.u" -Destination "Release/System"
+          Copy-Item -Path "${{ env.PKG_NAME }}/Docs" -Destination "Release"
+          Copy-Item -Path "${{ env.PKG_NAME }}/LICENSE" -Destination "Release"
+          Copy-Item -Path "${{ env.PKG_NAME }}/README.md" -Destination "Release"
+
+          Get-ChildItem "${{ env.PKG_NAME }}/Build/Dependencies" | ForEach-Object {
+            $Dep = $_
+            Get-ChildItem $Dep | ForEach-Object {
+              Copy-Item -Path $_.FullName -Destination "Release"
+            }
+          }
+
       - name: Save ${{ github.event.repository.name }} Package
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.PKG_NAME }}
+          name: "${{ env.PKG_NAME }}"
           path: |
-            ${{ env.PKG_NAME }}/System/
-            ${{ env.PKG_NAME }}/Docs/
-            ${{ env.PKG_NAME }}/LICENSE
-            ${{ env.PKG_NAME }}/README.md
+            "Release/**/*"
+            "Release/*"
+            "!Release/**/*.uz"
 
   release:
     runs-on: windows-latest
@@ -108,6 +124,7 @@ jobs:
       - name: Restore Package Name
         run: |
           echo ("PKG_NAME=" + (Get-Content -Path "PackageName")) >> $env:GITHUB_ENV
+          Remove-Item -Path "PackageName"
 
       - name: Download Artifact
         uses: actions/download-artifact@v2
@@ -116,11 +133,7 @@ jobs:
 
       - name: Create Release Asset
         run: >
-          7z a -tzip -- "../${{ env.PKG_NAME }}.zip"
-          System/
-          Docs/
-          LICENSE
-          README.md
+          7z a -tzip -- "${{ env.PKG_NAME }}.zip" *
 
       - name: Attach Asset To Release
         uses: shogo82148/actions-upload-release-asset@v1
