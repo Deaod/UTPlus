@@ -6,10 +6,10 @@
 :: Options:
 ::   BuildDir <directory> - Manually specify the root directory of the package
 ::     Example: C:\UT99\MyPackage\Build\Build.bat BuildDir "C:\UT99\MyPackage\"
-::   NoInt - Does not automatically generate a .int for the package
-::   NoUz - Does not automatically generate a .u.uz for the package
+::   NoInt - Do not automatically generate a .int for the package
+::   NoUz - Do not automatically generate a .u.uz for the package
 ::   Silent - Suppresses compatibility warnings, automatically resolves them
-::   NoBind - Generates C++ header files for packages with native code
+::   NoBind - Prevents binding native functions to C++ implementations, useful when adding new natives
 ::   Verbose - Can be used multiple times. More verbose -> More output from script
 :: 
 :: Dependencies:
