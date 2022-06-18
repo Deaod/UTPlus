@@ -228,7 +228,7 @@ exit /B %ERRORLEVEL%
     call :GenerateMakeIniPreamble %1
 
     :GenerateMakeIni_Loop
-        if [%2] NEQ [] goto GenerateMakeIni_EndLoop
+        if [%2] EQU [] goto GenerateMakeIni_EndLoop
         call :GenerateMakeIniDependency %1 %2
         shift /2
         goto GenerateMakeIni_Loop
