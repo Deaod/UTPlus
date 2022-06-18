@@ -110,9 +110,9 @@ jobs:
         with:
           name: "${{ env.PKG_NAME }}"
           path: |
-            "Release/**/*"
-            "Release/*"
-            "!Release/**/*.uz"
+            Release/**/*
+            Release/*
+            !Release/**/*.uz
 
   release:
     runs-on: windows-latest
