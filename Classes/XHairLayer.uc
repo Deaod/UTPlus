@@ -35,20 +35,16 @@ function Draw(Canvas C, float Scale) {
 	if (bUse == false)
 		return;
 
-	class'CanvasUtils'.static.SaveCanvas(C);
-
 	XLength = Scale * ScaleX * DrawTex.USize;
 	YLength = Scale * ScaleY * DrawTex.VSize;
 	C.Style = Style;
 
 	C.bNoSmooth = (bSmooth == false);
 	C.SetPos(
-		(C.ClipX - XLength) * 0.5 + Scale * OffsetX,
-		(C.ClipY - YLength) * 0.5 + Scale * OffsetY);
+		(C.SizeX - XLength) * 0.5 + Scale * OffsetX,
+		(C.SizeY - YLength) * 0.5 + Scale * OffsetY);
 	C.DrawColor = Color;
 	C.DrawTile(DrawTex, XLength, YLength, 0, 0, DrawTex.USize, DrawTex.VSize);
-
-	class'CanvasUtils'.static.RestoreCanvas(C);
 }
 
 defaultproperties {

@@ -44,8 +44,21 @@ static final function string ObjectGetPropertyTextOrDefault(Object O, string Pro
 	return Result;
 }
 
-simulated event PostRender(Canvas C) {
+simulated final function DrawCrosshair(Canvas C, float Scale) {
 	local XHairLayer L;
+	
+	class'CanvasUtils'.static.SaveCanvas(C);
+
+	C.SetOrigin(0, 0);
+	C.SetClip(C.SizeX, C.SizeY);
+
+	for (L = Layers; L != none; L = L.Next)
+		L.Draw(C, Scale);
+
+	class'CanvasUtils'.static.RestoreCanvas(C);
+}
+
+simulated event PostRender(Canvas C) {
 	local bool bAutoScale;
 	local float Scale;
 
@@ -69,16 +82,15 @@ simulated event PostRender(Canvas C) {
 		) {
 			bAutoScale = ObjectGetPropertyTextOrDefault(LocalHUD, "bAutoCrosshairScale", "False") ~= "true";
 			if (bAutoScale) {
-				if (C.ClipX < 512)
+				if (C.SizeX < 512)
 				    Scale = 0.5;
 				else
-					Scale = Clamp(int(0.1 + C.ClipX/640.0), 1, 2);
+					Scale = Clamp(int(0.1 + C.SizeX/640.0), 1, 2);
 			} else {
 				Scale = float(ObjectGetPropertyTextOrDefault(LocalHUD, "CrosshairScale", "1.0"));
 			}
 
-			for (L = Layers; L != none; L = L.Next)
-				L.Draw(C, Scale);
+			DrawCrosshair(C, Scale);
 		}
 	}
 
