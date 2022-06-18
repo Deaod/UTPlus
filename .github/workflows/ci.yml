@@ -94,10 +94,14 @@ jobs:
           Copy-Item -Path "${{ env.PKG_NAME }}/LICENSE" -Destination "Release"
           Copy-Item -Path "${{ env.PKG_NAME }}/README.md" -Destination "Release"
 
-          Get-ChildItem "${{ env.PKG_NAME }}/Build/Dependencies" | ForEach-Object {
-            $Dep = $_
-            Get-ChildItem $Dep | ForEach-Object {
-              Copy-Item -Path $_.FullName -Destination "Release"
+          if (Test-Path -Path "${{ env.PKG_NAME }}/Build/Dependencies" -PathType Container) {
+            Get-ChildItem "${{ env.PKG_NAME }}/Build/Dependencies" | ForEach-Object {
+              $Dep = $_
+              if (Test-Path $Dep -PathType Container) {
+                Get-ChildItem $Dep | ForEach-Object {
+                  Copy-Item -Path $_.FullName -Destination "Release"
+                }
+              }
             }
           }
 
