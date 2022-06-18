@@ -88,9 +88,8 @@ jobs:
         run: |
           New-Item -Path "Release/System" -ItemType Directory
 
-          Copy-Item -Path "${{ env.PKG_NAME }}/System/${{ env.PKG_NAME }}.int" -Destination "Release/System"
-          Copy-Item -Path "${{ env.PKG_NAME }}/System/${{ env.PKG_NAME }}.u" -Destination "Release/System"
-          Copy-Item -Path "${{ env.PKG_NAME }}/Docs" -Destination "Release"
+          Copy-Item -Path "${{ env.PKG_NAME }}/System" -Destination "Release" -Recurse
+          Copy-Item -Path "${{ env.PKG_NAME }}/Docs" -Destination "Release" -Recurse
           Copy-Item -Path "${{ env.PKG_NAME }}/LICENSE" -Destination "Release"
           Copy-Item -Path "${{ env.PKG_NAME }}/README.md" -Destination "Release"
 
@@ -99,7 +98,7 @@ jobs:
               $Dep = $_
               if (Test-Path $Dep -PathType Container) {
                 Get-ChildItem $Dep | ForEach-Object {
-                  Copy-Item -Path $_.FullName -Destination "Release"
+                  Copy-Item -Path $_.FullName -Destination "Release" -Recurse
                 }
               }
             }
