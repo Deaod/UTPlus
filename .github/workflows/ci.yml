@@ -86,17 +86,17 @@ jobs:
 
       - name: Collect Release Files
         run: |
-          Copy-Item -Path "${{ env.PKG_NAME }}/System" -Destination "Release" -Recurse -Force
-          Copy-Item -Path "${{ env.PKG_NAME }}/Docs" -Destination "Release" -Recurse -Force
-          Copy-Item -Path "${{ env.PKG_NAME }}/LICENSE" -Destination "Release"
-          Copy-Item -Path "${{ env.PKG_NAME }}/README.md" -Destination "Release"
+          Copy-Item -Path "${{ env.PKG_NAME }}/System" -Destination "Release" -Recurse -Force -Verbose
+          Copy-Item -Path "${{ env.PKG_NAME }}/Docs" -Destination "Release" -Recurse -Force -Verbose
+          Copy-Item -Path "${{ env.PKG_NAME }}/LICENSE" -Destination "Release" -Verbose
+          Copy-Item -Path "${{ env.PKG_NAME }}/README.md" -Destination "Release" -Verbose
 
           if (Test-Path -Path "${{ env.PKG_NAME }}/Build/Dependencies" -PathType Container) {
             Get-ChildItem "${{ env.PKG_NAME }}/Build/Dependencies" | ForEach-Object {
               $Dep = $_
               if (Test-Path $Dep -PathType Container) {
                 Get-ChildItem $Dep | ForEach-Object {
-                  Copy-Item -Path $_.FullName -Destination "Release" -Recurse -Force
+                  Copy-Item -Path $_.FullName -Destination "Release" -Recurse -Force -Verbose
                 }
               }
             }
