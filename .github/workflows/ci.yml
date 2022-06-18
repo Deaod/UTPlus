@@ -96,7 +96,7 @@ jobs:
               $Dep = $_
               if (Test-Path $Dep -PathType Container) {
                 Get-ChildItem $Dep | ForEach-Object {
-                  Copy-Item -Path $_.FullName -Destination "Release" -Recurse -Force -Verbose
+                  Copy-Item $_ -Destination ("Release/"+$_.Name) -Recurse -Force -Verbose
                 }
               }
             }
