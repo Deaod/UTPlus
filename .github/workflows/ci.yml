@@ -86,8 +86,8 @@ jobs:
 
       - name: Collect Release Files
         run: |
-          Copy-Item -Path "${{ env.PKG_NAME }}/System" -Destination "Release" -Recurse -Force -Verbose
-          Copy-Item -Path "${{ env.PKG_NAME }}/Docs" -Destination "Release" -Recurse -Force -Verbose
+          Copy-Item -Path "${{ env.PKG_NAME }}/System" -Destination "Release/System" -Recurse -Force -Verbose
+          Copy-Item -Path "${{ env.PKG_NAME }}/Docs" -Destination "Release/Docs" -Recurse -Force -Verbose
           Copy-Item -Path "${{ env.PKG_NAME }}/LICENSE" -Destination "Release" -Verbose
           Copy-Item -Path "${{ env.PKG_NAME }}/README.md" -Destination "Release" -Verbose
 
