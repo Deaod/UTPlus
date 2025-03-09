@@ -1,5 +1,6 @@
 class MutWarmup extends HUDMutator
 	config(Warmup);
+// Description="Allows play before all players are ready"
 
 var config int WarmupTimeLimit;
 

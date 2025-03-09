@@ -1,4 +1,5 @@
 class MutPSVis extends Mutator;
+// Description="Visualizes spawn points by placing dummies on them until the match begins"
 
 #exec TEXTURE IMPORT FILE="Textures/GreySkin.bmp" MIPS=OFF
 

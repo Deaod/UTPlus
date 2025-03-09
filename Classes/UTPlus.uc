@@ -1,5 +1,6 @@
 class UTPlus extends Mutator
     config(UTPlus);
+// Description="Main UT+ mutator, improved gameplay"
 
 var config bool bEnablePingCompensation;
 

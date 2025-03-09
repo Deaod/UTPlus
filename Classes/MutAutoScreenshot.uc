@@ -1,4 +1,5 @@
 class MutAutoScreenshot extends HUDMutator;
+// Description="Automatically takes a screenshot at the end of a match"
 
 auto state WaitForGameEnd {
 	simulated event Tick(float DeltaTime) {

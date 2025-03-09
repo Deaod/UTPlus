@@ -26,9 +26,6 @@ A replacement for the InstaGibDM mutator. Provides a weapon with more configurab
 ## [MutPSVis](Docs/MutPSVis.md)
 A mutator that reveals the potential spawn points of players on a map during warmup. 
 
-## [MutSmoReMove](Docs/MutSmoReMove.md)
-A mutator that smoothes out movement of other players on networked clients.
-
 ## [MutWarmup](Docs/MutWarmup.md)
 A mutator to allow play before the match starts. Provides all weapons available on the current map to player upon spawn.
 

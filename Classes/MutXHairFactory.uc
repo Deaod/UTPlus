@@ -1,5 +1,6 @@
 class MutXHairFactory extends HUDMutator
 	config(User);
+// Description="Allows rendering custom crosshairs made up of multiple layers"
 
 var Object SettingsHelper;
 var XHairSettings Settings;

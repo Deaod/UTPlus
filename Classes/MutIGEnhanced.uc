@@ -1,5 +1,6 @@
 class MutIGEnhanced extends Botpack.InstaGibDM
 	config;
+// Description="InstaGib Enhanced: Make every shot count"
 
 var IGEnhancedChannel ChannelList;
 

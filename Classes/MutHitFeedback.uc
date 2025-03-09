@@ -1,4 +1,5 @@
 class MutHitFeedback extends Mutator;
+// Description="Provides feedback when players deal damage"
 
 var HitFeedbackChannel ChannelList;
 

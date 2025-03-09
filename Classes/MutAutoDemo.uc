@@ -1,5 +1,6 @@
 class MutAutoDemo extends Mutator
 	config(AutoDemo);
+// Description="Automatically starts recording demos when the match starts"
 
 var Object SettingsHelper;
 var AutoDemoSettings Settings;

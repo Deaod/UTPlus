@@ -1,4 +1,5 @@
 class MutHUDClock extends HUDMutator;
+// Description="Shows remaining/elapsed time on HUD"
 
 #exec Texture Import File=Textures\HUDClockBackground.pcx Name=HUDClockBackground Mips=Off
 

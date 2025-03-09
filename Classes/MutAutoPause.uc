@@ -1,4 +1,5 @@
 class MutAutoPause extends Mutator;
+// Description="Automatically pauses the game when a player leaves"
 
 var Mutator WarmupMutator;
 var bool bWarmupMutatorSearchDone;
