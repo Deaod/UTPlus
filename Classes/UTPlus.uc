@@ -6,6 +6,8 @@ var config bool bEnablePingCompensation;
 
 var UTPlusDummy CompDummies;
 
+var UTPlusGameEventChain GameEventChain;
+
 function UTPlusDummy FindDummy(Pawn P) {
 	local UTPlusDummy D;
 
@@ -14,6 +16,13 @@ function UTPlusDummy FindDummy(Pawn P) {
 			return D;
 
 	return none;
+}
+
+function PostBeginPlay() {
+	super.PostBeginPlay();
+
+	GameEventChain = new(XLevel) class'UTPlusGameEventChain';
+	GameEventChain.Play(Level.TimeSeconds);
 }
 
 function ModifyLogin(
@@ -62,7 +71,22 @@ function TickPawns(float DeltaTime) {
 	}
 }
 
+function CheckGameEvents() {
+	if (Level.Pauser != "")	{	// This code is to avoid players being kicked when paused.
+		if (GameEventChain.IsPlaying())
+			GameEventChain.Pause(Level.TimeSeconds);
+	} else {
+		if (GameEventChain.IsPaused())
+			GameEventChain.Play(Level.TimeSeconds);
+	}
+}
+
+function float RealPlayTime(float TimeStamp, float DeltaTime) {
+	return GameEventChain.RealPlayTime(TimeStamp, DeltaTime);
+}
+
 event Tick(float DeltaTime) {
+	CheckGameEvents();
 	TickPawns(DeltaTime);
 }
 
