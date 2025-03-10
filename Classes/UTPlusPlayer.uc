@@ -1289,7 +1289,11 @@ function PlayInAir() {
 
 	// This change in BaseEyeHeight is removed to avoid players feeling like
 	// they've hit their head on a ceiling with every dodge/jump.
-	//BaseEyeHeight =  0.7 * Default.BaseEyeHeight;
+	//if () {
+	//    BaseEyeHeight =  0.7 * default.BaseEyeHeight;
+	//} else {
+		BaseEyeHeight = default.BaseEyeHeight; // this can be hit when exiting water
+	//}
 
 	if ( (GetAnimGroup(AnimSequence) == 'Landing') && !bLastJumpAlt ) {
 		GetAxes(Rotation, X,Y,Z);
