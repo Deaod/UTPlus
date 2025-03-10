@@ -277,8 +277,9 @@ event UpdateEyeHeight(float DeltaTime) {
 
 	// smooth up/down stairs, landing, dont smooth ramps
 	if ((Physics == PHYS_Walking && bJustLanded == false) ||
-		// Smooth out stepping up onto unwalkable ramps
-		(UTPlus_OldPhysics == PHYS_Walking && Physics == PHYS_Falling)
+		// Smooth out stepping up onto unwalkable ramps,
+		// as well as bobbing on the edge of a water zone.
+		(UTPlus_OldPhysics != PHYS_Falling && Physics == PHYS_Falling)
 	) {
 		DeltaZ = Location.Z - UTPlus_OldZ;
 
