@@ -61,7 +61,7 @@ function CompStart(int Ping) {
 	local int I;
 	local int Next;
 
-	TargetTimeStamp = Level.TimeSeconds - 0.0005*Ping;
+	TargetTimeStamp = Level.TimeSeconds - 0.001*Ping*Level.TimeDilation;
 
 	I = DataIndex - 1;
 	if (I < 0)
