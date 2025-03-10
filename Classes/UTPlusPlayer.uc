@@ -17,12 +17,12 @@ var float UTPlus_AccumulatedHTurn;
 var float UTPlus_AccumulatedVTurn;
 
 var EPhysics UTPlus_OldPhysics;
-var float UTPlus_OldZ;
-var bool UTPlus_ForceZSmoothing;
-var int UTPlus_IgnoreZChangeTicks;
-var float UTPlus_OldShakeVert;
-var float UTPlus_OldBaseEyeHeight;
-var float UTPlus_EyeHeightOffset;
+var float    UTPlus_OldZ;
+var bool     UTPlus_ForceZSmoothing;
+var int      UTPlus_IgnoreZChangeTicks;
+var float    UTPlus_OldShakeVert;
+var float    UTPlus_OldBaseEyeHeight;
+var float    UTPlus_EyeHeightOffset;
 
 var float UTPlus_LastRestartTime;
 var float UTPlus_RestartFireLockoutTime;
@@ -33,6 +33,13 @@ var float UTPlus_LastInputSendTime;
 var float UTPlus_TimeBetweenNetUpdates;
 var bool UTPlus_UpdateClient;
 var bool UTPlus_PressedJumpSave;
+
+struct ReplBuffer {
+	var int Data[20];
+};
+
+var UTPlusInputLogFile UTPlus_InputLogFile;
+var bool bTraceInput;
 
 var float UTPlus_DuckFraction;
 var float UTPlus_DuckTransitionTime;
@@ -45,13 +52,6 @@ var vector     UTPlus_TPFix_Velocity;
 var rotator    UTPlus_TPFix_Rotation;
 var Teleporter UTPlus_TPFix_LastTouched;
 var string     UTPlus_TPFix_URL;
-
-struct ReplBuffer {
-	var int Data[20];
-};
-
-var UTPlusInputLogFile UTPlus_InputLogFile;
-var bool bTraceInput;
 
 replication {
 	unreliable if (Role < ROLE_Authority)
@@ -252,44 +252,46 @@ function actor TraceShot(out vector HitLocation, out vector HitNormal, vector En
 	return Other;
 }
 
-// UpdateEyeHeight controls the EyeHeight property of a Pawn.
-// This algorithm needs to take into account:
-//   - Teleportation (Translocator, Respawning, Teleporters, ...)
-//   - Stepping onto unwalkable surfaces
-//   - Stairs up & down (see MaxStepHeight)
-//   - Ramps
-//   - Lifts
-//   - Landing 
-//
-// Currently this algorithm handles teleportation by ignoring Z changes due to
-// it. The detection of teleportation is rough, but it mostly works. Glitches
-// are rare and usually not noticable during play.
-//
-// Stepping onto unwalkable surfaces is detected by looking at the Physics of a
-// Pawn. Changes from PHYS_Walking to PHYS_Falling cause the change in Z
-// position to be smoothed.
-// 
-// Stairs are distinguished from ramps by looking at the rate of descent. Stairs
-// typically have a detected slope of >45°, while ramps have <45°. A slope >45°
-// is smoothed, everything else is not smoothed.
-// 
-// Lift movement is simply removed from Z-change considerations.
-// 
-// Pawns typically penetrate into the ground slightly before the Landed event is
-// executed, which is corrected on the next frame. Landing is handled by always
-// smoothing out the Z-change between the two relevant frames (the one on which
-// the Pawn landed and the one immediately after).
-// 
-// Changes are smoothed using an exponential function:
-//  NewDelta = OldDelta * e^(-a*DeltaTime)
-//   - 'a' was experimentally determined to work best at 9
-//   - This has the nice property of being independent of varying DeltaTime
-// 
-// EyeHeight is then used in PlayerCalcView to determine the CameraLocation, as
-// an offset in Z direction from the Pawns Location.
-// 
-// Additionally, this function also handles FOV changes.
-// Well, not anymore, it turns out players dislike smooth FOV changes. 
+/**
+ * UpdateEyeHeight controls the EyeHeight property of a Pawn.
+ * This algorithm needs to take into account:
+ *   - Teleportation (Translocator, Respawning, Teleporters, ...)
+ *   - Stepping onto unwalkable surfaces
+ *   - Stairs up & down (see MaxStepHeight)
+ *   - Ramps
+ *   - Lifts
+ *   - Landing
+ *
+ * Currently this algorithm handles teleportation by ignoring Z changes due to
+ * it. The detection of teleportation is rough, but it mostly works. Glitches
+ * are rare and usually not noticable during play.
+ *
+ * Stepping onto unwalkable surfaces is detected by looking at the Physics of a
+ * Pawn. Changes from PHYS_Walking to PHYS_Falling cause the change in Z
+ * position to be smoothed.
+ * 
+ * Stairs are distinguished from ramps by looking at the rate of descent. Stairs
+ * typically have a detected slope of >45°, while ramps have <45°. A slope >45°
+ * is smoothed, everything else is not smoothed.
+ *
+ * Lift movement is simply removed from Z-change considerations.
+ *
+ * Pawns typically penetrate into the ground slightly before the Landed event is
+ * executed, which is corrected on the next frame. Landing is handled by always
+ * smoothing out the Z-change between the two relevant frames (the one on which
+ * the Pawn landed and the one immediately after).
+ *
+ * Changes are smoothed using an exponential function:
+ *  NewDelta = OldDelta * e^(-a*DeltaTime)
+ *   - 'a' was experimentally determined to work best at 9
+ *   - This has the nice property of being independent of varying DeltaTime
+ *
+ * EyeHeight is then used in PlayerCalcView to determine the CameraLocation, as
+ * an offset in Z direction from the Pawns Location.
+ *
+ * Additionally, this function also handles FOV changes.
+ * Well, not anymore, it turns out players dislike smooth FOV changes.
+ */
 event UpdateEyeHeight(float DeltaTime) {
 	local float DeltaZ;
 
