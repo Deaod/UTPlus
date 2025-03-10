@@ -32,6 +32,12 @@ var float UTPlus_TimeBetweenNetUpdates;
 var bool UTPlus_UpdateClient;
 var bool UTPlus_PressedJumpSave;
 
+var float UTPlus_DuckFraction;
+var float UTPlus_DuckTransitionTime;
+var float UTPlus_DuckCollisionHeight;
+var float UTPlus_DuckCollisionRadius;
+var float UTPlus_DuckEyeHeight;
+
 struct ReplBuffer {
 	var int Data[20];
 };
@@ -181,29 +187,7 @@ simulated event Touch(Actor Other) {
 	super.Touch(Other);
 }
 
-event ServerTick(float DeltaTime) {
-
-}
-
 simulated function bool AdjustHitLocation(out vector HitLocation, vector TraceDir) {
-	local float adjZ, maxZ;
-
-	TraceDir = Normal(TraceDir);
-	HitLocation = HitLocation + 0.5 * CollisionRadius * TraceDir;
-	if ( BaseEyeHeight == Default.BaseEyeHeight )
-		return true;
-
-	maxZ = Location.Z + EyeHeight + 0.25 * CollisionHeight;
-	if (HitLocation.Z > maxZ)	{
-		if (TraceDir.Z >= 0)
-			return false;
-		adjZ = (maxZ - HitLocation.Z)/TraceDir.Z;
-		HitLocation.Z = maxZ;
-		HitLocation.X = HitLocation.X + TraceDir.X * adjZ;
-		HitLocation.Y = HitLocation.Y + TraceDir.Y * adjZ;
-		if (VSize(vect(1,1,0) * (HitLocation - Location)) > CollisionRadius)
-			return false;
-	}
 	return true;
 }
 
@@ -721,6 +705,7 @@ function UTPlus_PlayBackInput(UTPlusSavedInput Old, UTPlusSavedInput I) {
 		// youd have to save and restore these values
 		DodgeDir = Old.SavedDodgeDir;
 		DodgeClickTimer = Old.SavedDodgeClickTimer;
+		UTPlus_DuckFraction = Old.SavedDuckFraction;
 	}
 
 	ViewRotation = I.SavedViewRotation;
@@ -752,6 +737,37 @@ final function ServerTick(float DeltaTime) {
 	if (UTPlus_UpdateClient)
 		UTPlus_SendCAP();
 	UTPlus_UpdateClient = false;
+}
+
+final function UTPlus_ProcessDuck(float DeltaTime) {
+	local float DuckDelta;
+
+	if (Physics != PHYS_Walking)
+		return;
+
+	DuckDelta = UTPlus_DuckFraction;
+	if (bIsCrouching) {
+		UTPlus_DuckFraction = FClamp(UTPlus_DuckFraction + DeltaTime/UTPlus_DuckTransitionTime, 0.0, 1.0);
+	} else {
+		UTPlus_DuckFraction = FClamp(UTPlus_DuckFraction - DeltaTime/UTPlus_DuckTransitionTime, 0.0, 1.0);
+	}
+	DuckDelta -= UTPlus_DuckFraction;
+
+	if (DuckDelta == 0.0)
+		return;
+
+	BaseEyeHeight = Lerp(UTPlus_DuckFraction, default.BaseEyeHeight, UTPlus_DuckEyeHeight);
+
+	if (bIsCrouching == false)
+		MoveSmooth(DuckDelta * (default.CollisionHeight - UTPlus_DuckCollisionHeight) * vect(0,0,1));
+
+	SetCollisionSize(
+		Lerp(UTPlus_DuckFraction, default.CollisionRadius, UTPlus_DuckCollisionRadius),
+		Lerp(UTPlus_DuckFraction, default.CollisionHeight, UTPlus_DuckCollisionHeight)
+	);
+
+	if (bIsCrouching)
+	 	MoveSmooth(DuckDelta * (default.CollisionHeight - UTPlus_DuckCollisionHeight) * vect(0,0,1));
 }
 
 function PlayerMove(float Delta) {
@@ -1023,6 +1039,7 @@ state PlayerWalking {
 		UTPlus_UpdateRotation(DeltaTime, 1);
 
 		ProcessMove(DeltaTime, NewAccel, DodgeMove, OldRotation - Rotation);
+		UTPlus_ProcessDuck(DeltaTime);
 
 		if (Role < ROLE_Authority && bUpdating == false)
 			UTPlus_ReplicateInput(DeltaTime);
@@ -1335,6 +1352,23 @@ function PlayInAir() {
 		TweenAnim('JumpLGFR', TweenTime); 
 }
 
+function PlayDuck() {
+	BaseEyeHeight = UTPlus_DuckEyeHeight;
+	if ((Weapon == none) || (Weapon.Mass < 20))
+		TweenAnim('DuckWlkS', 0.25);
+	else
+		TweenAnim('DuckWlkL', 0.25);
+}
+
+function PlayCrawling() {
+	//log("Play duck");
+	BaseEyeHeight = UTPlus_DuckEyeHeight;
+	if ((Weapon == none) || (Weapon.Mass < 20))
+		LoopAnim('DuckWlkS');
+	else
+		LoopAnim('DuckWlkL');
+}
+
 // Copied from TournamentMale
 
 function PlayDying(name DamageType, vector HitLoc) {
@@ -1455,6 +1489,10 @@ static function SetMultiSkin(Actor SkinActor, string SkinName, string FaceName, 
 defaultproperties {
 	UTPlus_RestartFireLockoutTime=0.3
 	UTPlus_TimeBetweenNetUpdates=0.006666666666666
+	UTPlus_DuckTransitionTime=0.25
+	UTPlus_DuckCollisionHeight=25.0
+	UTPlus_DuckCollisionRadius=17.0
+	UTPlus_DuckEyeHeight=14.0
 
 	bAlwaysRelevant=True
 

@@ -12,6 +12,7 @@ var rotator SavedViewRotation;
 var bool SavedDodging;
 var EDodgeDir SavedDodgeDir;
 var float SavedDodgeClickTimer;
+var float SavedDuckFraction;
 var float SavedLastTimeForward;
 var float SavedLastTimeBack;
 var float SavedLastTimeLeft;
@@ -48,6 +49,7 @@ function CopyFrom(float Delta, UTPlusPlayer P) {
 	//SavedDodging = P.bDodging;
 	SavedDodgeDir = P.DodgeDir;
 	SavedDodgeClickTimer = P.DodgeClickTimer;
+	SavedDuckFraction = P.UTPlus_DuckFraction;
 	//SavedLastTimeForward = P.LastTimeForward;
 	//SavedLastTimeBack = P.LastTimeBack;
 	//SavedLastTimeLeft = P.LastTimeLeft;
