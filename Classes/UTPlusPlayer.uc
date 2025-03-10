@@ -11,6 +11,8 @@ var bool UTPlus_469Client;
 var bool UTPlus_469Server;
 var bool UTPlus_IsDemoPlayback;
 
+var float UTPlus_PingAverage;
+
 var float UTPlus_AccumulatedHTurn;
 var float UTPlus_AccumulatedVTurn;
 
@@ -47,6 +49,7 @@ var bool bTraceInput;
 
 replication {
 	unreliable if (Role < ROLE_Authority)
+		UTPlus_PingAverage,
 		UTPlus_ServerApplyInput;
 
 	unreliable if (RemoteRole == ROLE_AutonomousProxy)
@@ -340,6 +343,7 @@ final function UTPlus_UpdateClientPosition() {
 	local UTPlusSavedInput In;
 	local bool bRealJump;
 	local float AdjustDistance;
+	local float Ping;
 	local vector PostAdjustLocation;
 	local rotator SavedViewRotation;
 
@@ -356,6 +360,7 @@ final function UTPlus_UpdateClientPosition() {
 	In = UTPlus_SavedInputChain.Oldest;
 	if (In != none) {
 		while(In.Next != none) {
+			Ping += In.Next.Delta; // precision for this does not change
 			UTPlus_PlayBackInput(In, In.Next);
 			if (bTraceInput && UTPlus_InputLogFile != none)
 				UTPlus_InputLogFile.LogInputReplay(In.Next);
@@ -388,6 +393,8 @@ final function UTPlus_UpdateClientPosition() {
 
 	bUpdating = false;
 	bPressedJump = bRealJump;
+
+	UTPlus_UpdatePing(Ping);
 }
 
 final function UTPlus_SendCAP() {
@@ -731,6 +738,10 @@ function UTPlus_PlayBackInput(UTPlusSavedInput Old, UTPlusSavedInput I) {
 	aTurn = OldTurn;
 	bRun = OldRun;
 	bDuck = OldDuck;
+}
+
+final function UTPlus_UpdatePing(float Ping) {
+	UTPlus_PingAverage = (UTPlus_PingAverage*19.0 + Ping) / 20.0;
 }
 
 final function ServerTick(float DeltaTime) {
@@ -1495,6 +1506,7 @@ defaultproperties {
 	UTPlus_DuckEyeHeight=14.0
 
 	bAlwaysRelevant=True
+	PlayerReplicationInfoClass=class'UTPlusPlayerReplicationInfo'
 
 	Drown=Botpack.MaleSounds.drownM02
 	BreathAgain=Botpack.MaleSounds.gasp02
