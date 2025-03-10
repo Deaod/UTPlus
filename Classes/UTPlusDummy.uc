@@ -41,8 +41,8 @@ function FillData(out DummyData D) {
 event Tick(float DeltaTime) {
 	super.Tick(DeltaTime);
 
-	if (Actual.bDeleteMe) {
-		Destroy();
+	if (Actual == none || Actual.bDeleteMe) {
+		Disable('Tick');
 	}
 
 	if (Actual.IsA('PlayerPawn') == false || PlayerPawn(Actual).CurrentTimeStamp > LatestClientTimeStamp) {
