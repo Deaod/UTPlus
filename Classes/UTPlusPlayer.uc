@@ -2,8 +2,14 @@ class UTPlusPlayer extends Botpack.TournamentPlayer;
 
 var UTPlus MutUTPlus;
 
+var UTPlusClientSettings Settings;
+var Object SettingsHelper;
+
+var PlayerPawn UTPlus_LocalPlayer;
+
 var bool UTPlus_469Client;
 var bool UTPlus_469Server;
+var bool UTPlus_IsDemoPlayback;
 
 var float UTPlus_AccumulatedHTurn;
 var float UTPlus_AccumulatedVTurn;
@@ -19,12 +25,35 @@ var float UTPlus_EyeHeightOffset;
 var float UTPlus_LastRestartTime;
 var float UTPlus_RestartFireLockoutTime;
 
-var PlayerPawn UTPlus_LocalPlayer;
+var UTPlusSavedInputChain UTPlus_SavedInputChain;
+var UTPlusDataBuffer UTPlus_InputReplicationBuffer;
+var float UTPlus_LastInputSendTime;
+var float UTPlus_TimeBetweenNetUpdates;
+var bool UTPlus_UpdateClient;
+var bool UTPlus_PressedJumpSave;
 
-var UTPlusClientSettings Settings;
-var Object SettingsHelper;
+struct ReplBuffer {
+	var int Data[20];
+};
+
+var UTPlusInputLogFile UTPlus_InputLogFile;
+var bool bTraceInput;
 
 replication {
+	unreliable if (Role < ROLE_Authority)
+		UTPlus_ServerApplyInput;
+
+	unreliable if (RemoteRole == ROLE_AutonomousProxy)
+		UTPlus_CAP,
+		UTPlus_CAP_Level,
+		UTPlus_CAP_WalkS,
+		UTPlus_CAP_WalkS_FallP,
+		UTPlus_CAP_WalkS_WalkP,
+		UTPlus_CAP_WalkS_WalkP_Level;
+
+	reliable if (Role < ROLE_Authority)
+		UTPlus_ServerSetDodgeClickTime;
+
 	unreliable if ( bNetOwner && Role == ROLE_Authority )
 		UTPlus_469Server;
 
@@ -48,6 +77,14 @@ static final function int RotS2U(int R) {
 
 static final function int RotU2S(int R) {
 	return ((R << 16) >> 16);
+}
+
+final function vector GetBoxExtent() {
+	local vector R;
+	R.X = CollisionRadius;
+	R.Y = CollisionRadius;
+	R.Z = CollisionHeight;
+	return R;
 }
 
 simulated final function PlayerPawn GetLocalPlayer() {
@@ -100,6 +137,16 @@ simulated event PostBeginPlay() {
 
 	foreach AllActors(class'UTPlus', MutUTPlus)
 		break;
+
+	UTPlus_SavedInputChain = Spawn(class'UTPlusSavedInputChain');
+	UTPlus_InputReplicationBuffer = new(XLevel) class'UTPlusDataBuffer';
+	UTPlus_InputLogFile = Spawn(class'UTPlusInputLogFile');
+	if (Level.NetMode == NM_Client)
+		UTPlus_InputLogFile.LogId = "ClientInput";
+	else
+		UTPlus_InputLogFile.LogId = "ServerInput"$"_"$PlayerReplicationInfo.PlayerId;
+	if (bTraceInput)
+		UTPlus_InputLogFile.StartLog();
 }
 
 event Possess() {
@@ -115,9 +162,17 @@ event Possess() {
 			UTPlus_469Client = UTPlus_469Server;
 	}
 
-	if (PlayerReplicationInfo.Class == class'PlayerReplicationInfo') {
+	if (PlayerReplicationInfo.Class == class'PlayerReplicationInfo')
 		PlayerReplicationInfo.NetUpdateFrequency = 20;
-	}
+
+	if (Level.NetMode == NM_Client)
+		UTPlus_ServerSetDodgeClickTime(DodgeClickTime);
+}
+
+simulated event Destroyed() {
+	if (bTraceInput && UTPlus_InputLogFile != none)
+		UTPlus_InputLogFile.StopLog();
+	super.Destroyed();
 }
 
 simulated event Touch(Actor Other) {
@@ -271,24 +326,498 @@ event UpdateEyeHeight(float DeltaTime) {
 	FOVAngle = DesiredFOV;
 }
 
-event PlayerInput(float DeltaTime) {
-	// The following lines prevent tiny values in aBaseY and aStrafe that are
-	// not == 0.0 from being detected as dodging on UT v468 and earlier.
-	// v469 fixes this by moving from x87 floating point instructions to SSE2.
-	if (Abs(aBaseY)  < 1) aBaseY  = 0;
-	if (Abs(aStrafe) < 1) aStrafe = 0;
-
-	super.PlayerInput(DeltaTime);
-}
-
 function ClientReStart() {
 	super.ClientReStart();
 
 	UTPlus_IgnoreZChangeTicks = 1;
 }
 
-final function UTPlus_ReplicateMove(float DeltaTime, vector Accel, EDodgeDir DodgeMove, rotator RotDelta) {
-	ReplicateMove(DeltaTime, Accel, DodgeMove, RotDelta);
+// Dummy functions used as markers for UTrace
+final function UTPlus_UTraceMarker_LongFrame() {}
+final function UTPlus_UTraceMarker_FrameBegin() {}
+
+event PlayerInput(float DeltaTime) {
+	if (DeltaTime > 0.02)
+		UTPlus_UTraceMarker_LongFrame();
+	UTPlus_UTraceMarker_FrameBegin();
+
+	UTPlus_UpdateClientPosition();
+
+	UTPlus_PressedJumpSave = bPressedJump;
+	super.PlayerInput(DeltaTime);
+}
+
+final function UTPlus_ServerSetDodgeClickTime(float MaxTime) {
+	DodgeClickTime = MaxTime;
+}
+
+final function UTPlus_UpdateClientPosition() {
+	local UTPlusSavedInput In;
+	local bool bRealJump;
+	local float AdjustDistance;
+	local vector PostAdjustLocation;
+	local rotator SavedViewRotation;
+
+	if (bUpdatePosition == false)
+		return;
+	bUpdatePosition = false;
+
+	bRealJump = bPressedJump;
+	bUpdating = true;
+
+	UTPlus_SavedInputChain.RemoveOutdatedNodes(CurrentTimeStamp);
+	SavedViewRotation = ViewRotation;
+
+	In = UTPlus_SavedInputChain.Oldest;
+	if (In != none) {
+		while(In.Next != none) {
+			UTPlus_PlayBackInput(In, In.Next);
+			if (bTraceInput && UTPlus_InputLogFile != none)
+				UTPlus_InputLogFile.LogInputReplay(In.Next);
+			In = In.Next;
+		}
+	}
+
+	ViewRotation = SavedViewRotation;
+
+	// Higor: evaluate location adjustment and see if we should either
+	// - Discard it
+	// - Negate and process over a certain amount of time.
+	// - Keep adjustment as is (instant relocation)
+	// Deaod: Use exponential decay on offset instead
+	AdjustLocationOffset = (Location - PreAdjustLocation);
+	AdjustDistance = VSize(AdjustLocationOffset);
+	if ((AdjustDistance < 50) &&
+		FastTrace(Location, PreAdjustLocation) &&
+		IsInState('Dying') == false
+	) {
+		// Undo adjustment and re-enact smoothly
+		PostAdjustLocation = Location;
+		MoveSmooth(-AdjustLocationOffset);
+		if (AdjustDistance > 2) {
+			AdjustLocationOffset = (PostAdjustLocation - Location);
+		}
+	} else {
+		AdjustLocationOffset = vect(0,0,0);
+	}
+
+	bUpdating = false;
+	bPressedJump = bRealJump;
+}
+
+final function UTPlus_SendCAP() {
+	local vector ClientLoc;
+
+	if (Mover(Base) != None)
+		ClientLoc = Location - Base.Location;
+	else
+		ClientLoc = Location;
+
+	if (GetStateName() == 'PlayerWalking') {
+		if (Physics == PHYS_Walking) {
+			if (Base == Level) {
+				UTPlus_CAP_WalkS_WalkP_Level(CurrentTimeStamp, ClientLoc.X, ClientLoc.Y, ClientLoc.Z, Velocity.X, Velocity.Y, Velocity.Z);
+			} else {
+				UTPlus_CAP_WalkS_WalkP(CurrentTimeStamp, ClientLoc.X, ClientLoc.Y, ClientLoc.Z, Velocity.X, Velocity.Y, Velocity.Z, Base);
+			}
+		} else if (Physics == PHYS_Falling) {
+			UTPlus_CAP_WalkS_FallP(CurrentTimeStamp, ClientLoc.X, ClientLoc.Y, ClientLoc.Z, Velocity.X, Velocity.Y, Velocity.Z);
+		} else {
+			UTPlus_CAP_WalkS(CurrentTimeStamp, Physics, ClientLoc.X, ClientLoc.Y, ClientLoc.Z, Velocity.X, Velocity.Y, Velocity.Z, Base);
+		}
+	} else if (Base == Level) {
+		UTPlus_CAP_Level(CurrentTimeStamp, GetStateName(), Physics, ClientLoc.X, ClientLoc.Y, ClientLoc.Z, Velocity.X, Velocity.Y, Velocity.Z);
+	} else {
+		UTPlus_CAP(CurrentTimeStamp, GetStateName(), Physics, ClientLoc.X, ClientLoc.Y, ClientLoc.Z, Velocity.X, Velocity.Y, Velocity.Z, Base);
+	}
+}
+
+final function UTPlus_CAP(
+	float TimeStamp,
+	name NewState,
+	EPhysics Phys,
+	float NewLocX, float NewLocY, float NewLocZ,
+	float NewVelX, float NewVelY, float NewVelZ,
+	Actor NewBase
+) {
+	local vector Loc,Vel;
+	Loc.X = NewLocX; Loc.Y = NewLocY; Loc.Z = NewLocZ;
+	Vel.X = NewVelX; Vel.Y = NewVelY; Vel.Z = NewVelZ;
+	UTPlus_CAPImpl(TimeStamp, NewState, Phys, Loc, Vel, NewBase);
+}
+
+final function UTPlus_CAP_Level(
+	float TimeStamp,
+	name NewState,
+	EPhysics Phys,
+	float NewLocX, float NewLocY, float NewLocZ,
+	float NewVelX, float NewVelY, float NewVelZ
+) {
+	local vector Loc,Vel;
+	Loc.X = NewLocX; Loc.Y = NewLocY; Loc.Z = NewLocZ;
+	Vel.X = NewVelX; Vel.Y = NewVelY; Vel.Z = NewVelZ;
+	UTPlus_CAPImpl(TimeStamp, NewState, Phys, Loc, Vel, Level);
+}
+
+final function UTPlus_CAP_WalkS(
+	float TimeStamp,
+	EPhysics Phys,
+	float NewLocX, float NewLocY, float NewLocZ,
+	float NewVelX, float NewVelY, float NewVelZ,
+	Actor NewBase
+) {
+	local vector Loc,Vel;
+	Loc.X = NewLocX; Loc.Y = NewLocY; Loc.Z = NewLocZ;
+	Vel.X = NewVelX; Vel.Y = NewVelY; Vel.Z = NewVelZ;
+	UTPlus_CAPImpl(TimeStamp, 'PlayerWalking', Phys, Loc, Vel, NewBase);
+}
+
+final function UTPlus_CAP_WalkS_FallP(
+	float TimeStamp,
+	float NewLocX, float NewLocY, float NewLocZ,
+	float NewVelX, float NewVelY, float NewVelZ
+) {
+	local vector Loc,Vel;
+	Loc.X = NewLocX; Loc.Y = NewLocY; Loc.Z = NewLocZ;
+	Vel.X = NewVelX; Vel.Y = NewVelY; Vel.Z = NewVelZ;
+	UTPlus_CAPImpl(TimeStamp, 'PlayerWalking', PHYS_Falling, Loc, Vel, none);
+}
+
+final function UTPlus_CAP_WalkS_WalkP(
+	float TimeStamp,
+	float NewLocX, float NewLocY, float NewLocZ,
+	float NewVelX, float NewVelY, float NewVelZ,
+	Actor NewBase
+) {
+	local vector Loc,Vel;
+	Loc.X = NewLocX; Loc.Y = NewLocY; Loc.Z = NewLocZ;
+	Vel.X = NewVelX; Vel.Y = NewVelY; Vel.Z = NewVelZ;
+	UTPlus_CAPImpl(TimeStamp, 'PlayerWalking', PHYS_Walking, Loc, Vel, NewBase);
+}
+
+final function UTPlus_CAP_WalkS_WalkP_Level(
+	float TimeStamp,
+	float NewLocX, float NewLocY, float NewLocZ,
+	float NewVelX, float NewVelY, float NewVelZ
+) {
+	local vector Loc,Vel;
+	Loc.X = NewLocX; Loc.Y = NewLocY; Loc.Z = NewLocZ;
+	Vel.X = NewVelX; Vel.Y = NewVelY; Vel.Z = NewVelZ;
+	UTPlus_CAPImpl(TimeStamp, 'PlayerWalking', PHYS_Walking, Loc, Vel, Level);
+}
+
+final function UTPlus_CAPImpl(
+	float TimeStamp,
+	name NewState,
+	EPhysics Phys,
+	vector NewLoc,
+	vector NewVel,
+	Actor NewBase
+) {
+	local Decoration Carried;
+	local vector OldLoc;
+
+	if (bDeleteMe)
+		return;
+
+	if (UTPlus_SavedInputChain.Oldest.TimeStamp - 0.5*UTPlus_SavedInputChain.Oldest.Delta > TimeStamp)
+		return;
+
+	if (bTraceInput && UTPlus_InputLogFile != none)
+		UTPlus_InputLogFile.LogCAP(TimeStamp, NewLoc, NewVel, NewBase);
+	CurrentTimeStamp = TimeStamp;
+
+	// Higor: keep track of Position prior to adjustment
+	// and stop current smoothed adjustment (if in progress).
+	if (bUpdatePosition == false)
+		PreAdjustLocation = Location;
+	if (VSize(AdjustLocationOffset) > 0) {
+		AdjustLocationAlpha = 0;
+		AdjustLocationOffset = vect(0,0,0);
+	}
+
+	SetPhysics(Phys);
+	SetBase(NewBase);
+	if (Mover(NewBase) != none)
+		NewLoc += NewBase.Location;
+
+	if (GetStateName() != NewState)
+		GotoState(NewState);
+
+	Carried = CarriedDecoration;
+	OldLoc = Location;
+
+	bCanTeleport = false;
+	SetLocation(NewLoc);
+	bCanTeleport = true;
+	Velocity = NewVel;
+
+	if (Carried != none) {
+		CarriedDecoration = Carried;
+		CarriedDecoration.SetLocation(NewLoc + CarriedDecoration.Location - OldLoc);
+		CarriedDecoration.SetPhysics(PHYS_None);
+		CarriedDecoration.SetBase(self);
+	}
+
+	bUpdatePosition = true;
+}
+
+final function UTPlus_ServerApplyInput(float RefTimeStamp, int NumBits, ReplBuffer B) {
+	local int i;
+	local UTPlusSavedInput Node;
+	local UTPlusSavedInput Old;
+	local float DeltaTime;
+	local float ServerDeltaTime;
+	local float LostTime;
+
+	if (Role < ROLE_Authority) {
+		UTPlus_IsDemoPlayback = true;
+		return;
+	}
+
+	if (bDeleteMe)
+		return;
+
+	UTPlus_InputReplicationBuffer.NumBitsConsumed = 0;
+	UTPlus_InputReplicationBuffer.NumBits = NumBits;
+	for (i = 0; i < arraycount(B.Data); i++)
+		UTPlus_InputReplicationBuffer.BitsData[i] = B.Data[i];
+
+	// if (Level.Pauser == "")
+	// 	UndoExtrapolation();
+
+	Old = UTPlus_SavedInputChain.Newest;
+	if (Old == none) {
+		Old = UTPlus_SavedInputChain.AllocateNode();
+		Old.DeserializeFrom(UTPlus_InputReplicationBuffer);
+		Old.TimeStamp = RefTimeStamp + Old.Delta;
+		RefTimeStamp = Old.TimeStamp;
+		if (UTPlus_SavedInputChain.AppendNode(Old) == false)
+			UTPlus_SavedInputChain.FreeNode(Old);
+	}
+
+	while(UTPlus_InputReplicationBuffer.IsDataSufficient(class'UTPlusSavedInput'.default.SerializedBits)) {
+		Node = UTPlus_SavedInputChain.AllocateNode();
+		Node.DeserializeFrom(UTPlus_InputReplicationBuffer);
+		DeltaTime += Node.Delta;
+		Node.TimeStamp = RefTimeStamp + DeltaTime;
+		if (UTPlus_SavedInputChain.AppendNode(Node) == false)
+			UTPlus_SavedInputChain.FreeNode(Node);
+	}
+
+	DeltaTime        = UTPlus_SavedInputChain.Newest.TimeStamp - CurrentTimeStamp;
+	CurrentTimeStamp = UTPlus_SavedInputChain.Newest.TimeStamp;
+
+	if (ServerTimeStamp != 0.0) {
+		ServerDeltaTime = Level.TimeSeconds - ServerTimeStamp;
+		ServerTimeStamp = Level.TimeSeconds;
+
+		//ExtrapolationDelta += (ServerDeltaTime - DeltaTime);
+	} else {
+		ServerTimeStamp = Level.TimeSeconds;
+		//ExtrapolationDelta = 0.0;
+	}
+
+	// simulate lost time to match extrapolation done by all clients
+	LostTime = RefTimeStamp - Old.TimeStamp; // typically <= 0
+	LostTime = MutUTPlus.RealPlayTime(ServerTimeStamp, LostTime); // this removed time spent paused
+	if (LostTime > 0.001)
+		UTPlus_SimMoveAutonomous(LostTime);
+
+	while(Old.Next != none) {
+		UTPlus_PlayBackInput(Old, Old.Next);
+		if (bTraceInput && UTPlus_InputLogFile != none)
+			UTPlus_InputLogFile.LogInput(Old.Next);
+		Old = Old.Next;
+	}
+
+	// clean up
+	UTPlus_SavedInputChain.RemoveOutdatedNodes(Old.TimeStamp);
+
+	UTPlus_UpdateClient = true;
+}
+
+function UTPlus_PlayBackInput(UTPlusSavedInput Old, UTPlusSavedInput I) {
+	local float OldBaseX, OldBaseY, OldBaseZ;
+	local float OldMouseX, OldMouseY;
+	local float OldForward, OldStrafe, OldUp, OldLookUp, OldTurn;
+	local byte OldRun, OldDuck;
+
+	OldBaseX = aBaseX;
+	OldBaseY = aBaseY;
+	OldBaseZ = aBaseZ;
+	OldMouseX = aMouseX;
+	OldMouseY = aMouseY;
+	OldForward = aForward;
+	OldStrafe = aStrafe;
+	OldUp = aUp;
+	OldLookUp = aLookUp;
+	OldTurn = aTurn;
+	OldRun = bRun;
+	OldDuck = bDuck;
+
+	aBaseX = 0;
+	aBaseY = 0;
+	aBaseZ = 0;
+	aMouseX = 0;
+	aMouseY = 0;
+	aForward = 0;
+	aStrafe = 0;
+	aUp = 0;
+	aLookUp = 0;
+	aTurn = 0;
+
+	bWasForward    = I.bForw;
+	bWasBack       = I.bBack;
+	bWasLeft       = I.bLeft;
+	bWasRight      = I.bRigh;
+	bEdgeForward   = Old.bForw != bWasForward;
+	bEdgeBack      = Old.bBack != bWasBack;
+	bEdgeLeft      = Old.bLeft != bWasLeft;
+	bEdgeRight     = Old.bRigh != bWasRight;
+
+	if (I.bLive) {
+		if (I.bForw) aForward += 6000.0;
+		if (I.bBack) aForward -= 6000.0;
+		if (I.bLeft) aStrafe  += 6000.0;
+		if (I.bRigh) aStrafe  -= 6000.0;
+		if (I.bDuck) aUp      -= 6000.0;
+		if (I.bJump) aUp      += 6000.0;
+
+		if (I.bWalk) bRun = 1; else bRun = 0;
+		if (I.bDuck) bDuck = 1; else bDuck = 0;
+
+		bPressedJump = I.bJump && (I.bJump != Old.bJump);
+	}
+
+	if (RemoteRole == ROLE_AutonomousProxy) {
+		// handle firing and alt-firing on server
+		if (I.bFire) {
+			if (bFire == 0) {
+				if (I.bLive && I.bFFir && Weapon != none)
+					Weapon.ForceFire();
+				else
+					Fire(0);
+			}
+			bFire = 1;
+		} else {
+			bFire = 0;
+		}
+
+		if (I.bAFir) {
+			if (bAltFire == 0) {
+				if (I.bLive && I.bFAFr && Weapon != none)
+					Weapon.ForceAltFire();
+				else
+					AltFire(0);
+			}
+			bAltFire = 1;
+		} else {
+			bAltFire = 0;
+		}
+	} else if (RemoteRole == ROLE_Authority) {
+		// this assumes that you always replay up until the present, otherwise
+		// youd have to save and restore these values
+		DodgeDir = Old.SavedDodgeDir;
+		DodgeClickTimer = Old.SavedDodgeClickTimer;
+	}
+
+	ViewRotation = I.SavedViewRotation;
+
+	// 
+
+	HandleWalking();
+	PlayerMove(I.Delta);
+	AutonomousPhysics(I.Delta);
+
+	I.SavedLocation = Location;
+	I.SavedVelocity = Velocity;
+
+	aBaseX = OldBaseX;
+	aBaseY = OldBaseY;
+	aBaseZ = OldBaseZ;
+	aMouseX = OldMouseX;
+	aMouseY = OldMouseY;
+	aForward = OldForward;
+	aStrafe = OldStrafe;
+	aUp = OldUp;
+	aLookUp = OldLookUp;
+	aTurn = OldTurn;
+	bRun = OldRun;
+	bDuck = OldDuck;
+}
+
+final function ServerTick(float DeltaTime) {
+	if (UTPlus_UpdateClient)
+		UTPlus_SendCAP();
+	UTPlus_UpdateClient = false;
+}
+
+function PlayerMove(float Delta) {
+	ClientMessage("Help Im Stuck In A Global Function");
+	assert false;
+}
+
+final function UTPlus_ReplicateInput(float DeltaTime) {
+	local float RealDelta;
+	local UTPlusSavedInput ReferenceInput;
+	local vector NewOffset, TargetLoc;
+	local ReplBuffer B;
+	local int i;
+
+	// Higor: process smooth adjustment.
+	if (VSize(AdjustLocationOffset) > 0) {
+		TargetLoc = Location + AdjustLocationOffset;
+		NewOffset = AdjustLocationOffset * Exp(-20*DeltaTime);
+		MoveSmooth(AdjustLocationOffset - NewOffset);
+		AdjustLocationOffset = TargetLoc - Location;
+	} else {
+		AdjustLocationOffset = vect(0,0,0);
+	}
+
+	AutonomousPhysics(DeltaTime);
+
+	UTPlus_SavedInputChain.Add(DeltaTime, self);
+	if (bTraceInput && UTPlus_InputLogFile != none)
+		UTPlus_InputLogFile.LogInput(UTPlus_SavedInputChain.Newest);
+
+	RealDelta = (Level.TimeSeconds - UTPlus_LastInputSendTime) / Level.TimeDilation;
+	if (RealDelta < UTPlus_TimeBetweenNetUpdates - ClientUpdateTime)
+		return;
+
+	ClientUpdateTime = FClamp(RealDelta - UTPlus_TimeBetweenNetUpdates + ClientUpdateTime, -UTPlus_TimeBetweenNetUpdates, UTPlus_TimeBetweenNetUpdates);
+	UTPlus_LastInputSendTime = Level.TimeSeconds;
+
+	UTPlus_InputReplicationBuffer.Reset();
+	ReferenceInput = UTPlus_SavedInputChain.SerializeNodes(10, UTPlus_InputReplicationBuffer);
+
+	if (UTPlus_InputReplicationBuffer.NumBits > 0) {
+		for (i = 0; i < arraycount(B.Data); i++)
+			B.Data[i] = UTPlus_InputReplicationBuffer.BitsData[i];
+		UTPlus_ServerApplyInput(ReferenceInput.TimeStamp, UTPlus_InputReplicationBuffer.NumBits, B);
+	}
+
+	if ((Weapon != None) && !Weapon.IsAnimating()) {
+		if ((Weapon == ClientPending) || (Weapon != OldClientWeapon)) {
+			if (Weapon.Owner != self) //Non-respawnable weapon was picked up and Owner wasn't replicated yet
+				Weapon.SetOwner(self); //Simulate owner change locally
+			if (Weapon.IsInState('ClientActive'))
+				AnimEnd();
+			else
+				Weapon.GotoState('ClientActive');
+			if ((Weapon != ClientPending) && (myHUD != None) && myHUD.IsA('ChallengeHUD'))
+				ChallengeHUD(myHUD).WeaponNameFade = 1.3;
+			if ((Weapon != OldClientWeapon) && (OldClientWeapon != None))
+				OldClientWeapon.GotoState('');
+
+			ClientPending = None;
+			bNeedActivate = false;
+		} else {
+			Weapon.GotoState('');
+			Weapon.TweenToStill();
+		}
+	}
+	OldClientWeapon = Weapon;
 }
 
 final function int UTPlus_AccumulatedPlayerTurn(float Delta, out float Fraction) {
@@ -319,6 +848,36 @@ final function UTPlus_UpdateRotation(float DeltaTime, float maxPitch) {
 		maxPitch * RotationRate.Pitch
 	));
 	SetRotation(NewRotation);
+}
+
+final function UTPlus_MoveAutonomous(
+	float DeltaTime,
+	bool NewbRun,
+	bool NewbDuck,
+	bool NewbPressedJump,
+	eDodgeDir DodgeMove,
+	vector newAccel,
+	rotator DeltaRot
+) {
+	//IGPlus_TPFix_LastTouched = none;
+	MoveAutonomous(DeltaTime, NewbRun, NewbDuck, NewbPressedJump, DodgeMove, newAccel, DeltaRot);
+	//CorrectTeleporterVelocity();
+}
+
+/**
+ * Splits a large DeltaTime into chunks reasonable enough for MoveAutonomous,
+ * so players dont warp through walls
+ */
+final function UTPlus_SimMoveAutonomous(float DeltaTime) {
+	local int SimSteps;
+	local float SimTime;
+
+	SimSteps = 1 + int(DeltaTime / 0.01666666666);
+	SimTime = DeltaTime / SimSteps;
+	while(SimSteps > 0) {
+		UTPlus_MoveAutonomous(SimTime, bRun>0, bDuck>0, false, DODGE_None, Acceleration, rot(0,0,0));
+		SimSteps--;
+	}
 }
 
 // COMMANDS
@@ -355,22 +914,38 @@ exec function Ready() {
 		ClientMessage(GetNotReadyMessage());
 }
 
+exec function TraceInput() {
+	if (bTraceInput) {
+		ClientMessage("Stop tracing input");
+		UTPlus_InputLogFile.StopLog();
+	} else {
+		ClientMessage("Start tracing input");
+		UTPlus_InputLogFile.StartLog();
+	}
+	bTraceInput = !bTraceInput;
+}
+
 // STATES
 
 state PlayerWalking {
 	ignores SeePlayer, HearNoise, Bump;
 
-	function PlayerMove( float DeltaTime )
-	{
+	function BeginState() {
+		super.BeginState();
+
+		SetCollisionSize(default.CollisionRadius, default.CollisionHeight);
+	}
+
+	function PlayerMove(float DeltaTime) {
 		local vector X,Y,Z, NewAccel;
 		local EDodgeDir OldDodge;
 		local eDodgeDir DodgeMove;
 		local rotator OldRotation;
 		local float Speed2D;
-		local bool	bSaveJump;
-		local name AnimGroupName;
+		local rotator MoveRot;
 
-		GetAxes(Rotation,X,Y,Z);
+		MoveRot.Yaw = Rotation.Yaw;
+		GetAxes(MoveRot,X,Y,Z);
 
 		aForward *= 0.4;
 		aStrafe  *= 0.4;
@@ -382,12 +957,12 @@ state PlayerWalking {
 		NewAccel.Z = 0;
 		
 		// Check for Dodge move
-		if ( DodgeDir == DODGE_Active )
+		if (DodgeDir == DODGE_Active)
 			DodgeMove = DODGE_Active;
 		else
 			DodgeMove = DODGE_None;
 		if (DodgeClickTime > 0.0) {
-			if ( DodgeDir < DODGE_Active ) {
+			if (DodgeDir < DODGE_Active) {
 				OldDodge = DodgeDir;
 				DodgeDir = DODGE_None;
 				if (bEdgeForward && bWasForward)
@@ -398,9 +973,9 @@ state PlayerWalking {
 					DodgeDir = DODGE_Left;
 				if (bEdgeRight && bWasRight)
 					DodgeDir = DODGE_Right;
-				if ( DodgeDir == DODGE_None)
+				if (DodgeDir == DODGE_None)
 					DodgeDir = OldDodge;
-				else if ( DodgeDir != OldDodge )
+				else if (DodgeDir != OldDodge)
 					DodgeClickTimer = DodgeClickTime + 0.5 * DeltaTime;
 				else
 					DodgeMove = DodgeDir;
@@ -421,24 +996,23 @@ state PlayerWalking {
 			}
 		}
 
-		AnimGroupName = GetAnimGroup(AnimSequence);
-		if ( (Physics == PHYS_Walking) && (AnimGroupName != 'Dodge') ) {
+		if ((Physics == PHYS_Walking)) {
 			//if walking, look up/down stairs - unless player is rotating view
-			if ( !bKeyboardLook && (bLook == 0) ) {
-				if ( bLookUpStairs ) {
+			if (!bKeyboardLook && (bLook == 0)) {
+				if (bLookUpStairs) {
 					ViewRotation.Pitch = FindStairRotation(deltaTime);
-				} else if ( bCenterView ) {
+				} else if (bCenterView) {
 					ViewRotation.Pitch = RotU2S(ViewRotation.Pitch) * (1 - 12 * FMin(0.0833, deltaTime));
-					if ( Abs(ViewRotation.Pitch) < 1000 )
+					if (Abs(ViewRotation.Pitch) < 1000)
 						ViewRotation.Pitch = 0;
 				}
 			}
 
 			Speed2D = Sqrt(Velocity.X * Velocity.X + Velocity.Y * Velocity.Y);
 			//add bobbing when walking
-			if ( !bShowMenu )
+			if (!bShowMenu && bUpdating == false)
 				CheckBob(DeltaTime, Speed2D, Y);
-		} else if ( !bShowMenu ) {
+		} else if (!bShowMenu) {
 			BobTime = 0;
 			WalkBob = WalkBob * (1 - FMin(1, 8 * deltatime));
 		}
@@ -447,19 +1021,12 @@ state PlayerWalking {
 		OldRotation = Rotation;
 		UTPlus_UpdateRotation(DeltaTime, 1);
 
-		if ( bPressedJump && (AnimGroupName == 'Dodge') ) {
-			bSaveJump = true;
-			bPressedJump = false;
-		} else {
-			bSaveJump = false;
-		}
+		ProcessMove(DeltaTime, NewAccel, DodgeMove, OldRotation - Rotation);
 
-		if ( Role < ROLE_Authority ) // then save this move and replicate it
-			UTPlus_ReplicateMove(DeltaTime, NewAccel, DodgeMove, OldRotation - Rotation);
-		else
-			ProcessMove(DeltaTime, NewAccel, DodgeMove, OldRotation - Rotation);
-		
-		bPressedJump = bSaveJump;
+		if (Role < ROLE_Authority && bUpdating == false)
+			UTPlus_ReplicateInput(DeltaTime);
+
+		bPressedJump = false;
 	}
 }
 
@@ -475,12 +1042,12 @@ state PlayerSwimming {
 		aStrafe  *= 0.1;
 		aLookup  *= 0.24;
 		aTurn    *= 0.24;
-		aUp		 *= 0.1;
+		aUp      *= 0.1;
 
 		NewAccel = aForward*X + aStrafe*Y + aUp*vect(0,0,1);
 
 		//add bobbing when swimming
-		if ( !bShowMenu ) {
+		if (!bShowMenu) {
 			Speed2D = Sqrt(Velocity.X * Velocity.X + Velocity.Y * Velocity.Y);
 			WalkBob = Y * Bob *  0.5 * Speed2D * Sin(4.0 * Level.TimeSeconds);
 			WalkBob.Z = Bob * 1.5 * Speed2D * Sin(8.0 * Level.TimeSeconds);
@@ -490,10 +1057,10 @@ state PlayerSwimming {
 		oldRotation = Rotation;
 		UTPlus_UpdateRotation(DeltaTime, 2);
 
-		if ( Role < ROLE_Authority ) // then save this move and replicate it
-			UTPlus_ReplicateMove(DeltaTime, NewAccel, DODGE_None, OldRotation - Rotation);
-		else
-			ProcessMove(DeltaTime, NewAccel, DODGE_None, OldRotation - Rotation);
+		ProcessMove(DeltaTime, NewAccel, DODGE_None, OldRotation - Rotation);
+		if (Role < ROLE_Authority && bUpdating == false)
+			UTPlus_ReplicateInput(DeltaTime);
+
 		bPressedJump = false;
 	}
 }
@@ -517,10 +1084,10 @@ state FeigningDeath {
 		UTPlus_UpdateRotation(DeltaTime, 1);
 		SetRotation(currentRot);
 
-		if ( Role < ROLE_Authority ) // then save this move and replicate it
-			UTPlus_ReplicateMove(DeltaTime, NewAccel, DODGE_None, Rot(0,0,0));
-		else
-			ProcessMove(DeltaTime, NewAccel, DODGE_None, Rot(0,0,0));
+		ProcessMove(DeltaTime, NewAccel, DODGE_None, Rot(0,0,0));
+		if (Role < ROLE_Authority && bUpdating == false)
+			UTPlus_ReplicateInput(DeltaTime);
+
 		bPressedJump = false;
 	}
 }
@@ -543,11 +1110,11 @@ state Dying {
 			// Update view rotation.
 			aLookup  *= 0.24;
 			aTurn    *= 0.24;
-			ViewRotation.Yaw += UTPlus_AccumulatedPlayerTurn( 32.0 * DeltaTime * aTurn, UTPlus_AccumulatedHTurn);
-			ViewRotation.Pitch += UTPlus_AccumulatedPlayerTurn( 32.0 * DeltaTime * aLookUp, UTPlus_AccumulatedVTurn);
+			ViewRotation.Yaw += UTPlus_AccumulatedPlayerTurn(32.0 * DeltaTime * aTurn, UTPlus_AccumulatedHTurn);
+			ViewRotation.Pitch += UTPlus_AccumulatedPlayerTurn(32.0 * DeltaTime * aLookUp, UTPlus_AccumulatedVTurn);
 			ViewRotation.Pitch = RotS2U(Clamp(RotU2S(ViewRotation.Pitch), -16384, 16383));
-			if ( Role < ROLE_Authority ) // then save this move and replicate it
-				UTPlus_ReplicateMove(DeltaTime, vect(0,0,0), DODGE_None, rot(0,0,0));
+			if (Role < ROLE_Authority && bUpdating == false)
+				UTPlus_ReplicateInput(DeltaTime);
 		}
 		ViewShake(DeltaTime);
 		ViewFlash(DeltaTime);
@@ -570,10 +1137,11 @@ state PlayerWaiting {
 
 		UTPlus_UpdateRotation(DeltaTime, 1);
 
-		if ( Role < ROLE_Authority ) // then save this move and replicate it
-			UTPlus_ReplicateMove(DeltaTime, Acceleration, DODGE_None, rot(0,0,0));
-		else
-			ProcessMove(DeltaTime, Acceleration, DODGE_None, rot(0,0,0));
+		ProcessMove(DeltaTime, Acceleration, DODGE_None, rot(0,0,0));
+		if (Role < ROLE_Authority )
+			UTPlus_ReplicateInput(DeltaTime);
+
+		bPressedJump = false;
 	}
 }
 
@@ -592,10 +1160,11 @@ state PlayerFlying {
 		// Update rotation.
 		UTPlus_UpdateRotation(DeltaTime, 2);
 
-		if ( Role < ROLE_Authority ) // then save this move and replicate it
-			UTPlus_ReplicateMove(DeltaTime, Acceleration, DODGE_None, rot(0,0,0));
-		else
-			ProcessMove(DeltaTime, Acceleration, DODGE_None, rot(0,0,0));
+		ProcessMove(DeltaTime, Acceleration, DODGE_None, rot(0,0,0));
+		if (Role < ROLE_Authority && bUpdating == false)
+			UTPlus_ReplicateInput(DeltaTime);
+
+		bPressedJump = false;
 	}
 }
 
@@ -615,10 +1184,11 @@ state CheatFlying {
 
 		UTPlus_UpdateRotation(DeltaTime, 1);
 
-		if ( Role < ROLE_Authority ) // then save this move and replicate it
-			UTPlus_ReplicateMove(DeltaTime, Acceleration, DODGE_None, rot(0,0,0));
-		else
-			ProcessMove(DeltaTime, Acceleration, DODGE_None, rot(0,0,0));
+		ProcessMove(DeltaTime, Acceleration, DODGE_None, rot(0,0,0));
+		if (Role < ROLE_Authority && bUpdating == false)
+			UTPlus_ReplicateInput(DeltaTime);
+
+		bPressedJump = false;
 	}
 }
 
@@ -638,10 +1208,11 @@ state PlayerSpectating {
 
 		UTPlus_UpdateRotation(DeltaTime, 1);
 
-		if ( Role < ROLE_Authority ) // then save this move and replicate it
-			UTPlus_ReplicateMove(DeltaTime, Acceleration, DODGE_None, rot(0,0,0));
-		else
-			ProcessMove(DeltaTime, Acceleration, DODGE_None, rot(0,0,0));
+		ProcessMove(DeltaTime, Acceleration, DODGE_None, rot(0,0,0));
+		if (Role < ROLE_Authority && bUpdating == false)
+			UTPlus_ReplicateInput(DeltaTime);
+
+		bPressedJump = false;
 	}
 }
 
@@ -658,10 +1229,11 @@ state PlayerWaking {
 			}
 		}
 
-		if ( Role < ROLE_Authority ) // then save this move and replicate it
-			UTPlus_ReplicateMove(DeltaTime, vect(0,0,0), DODGE_None, rot(0,0,0));
-		else
-			ProcessMove(DeltaTime, vect(0,0,0), DODGE_None, rot(0,0,0));
+		ProcessMove(DeltaTime, vect(0,0,0), DODGE_None, rot(0,0,0));
+		if (Role < ROLE_Authority && bUpdating == false)
+			UTPlus_ReplicateInput(DeltaTime);
+
+		bPressedJump = false;
 	}
 }
 
@@ -686,7 +1258,7 @@ state GameEnded {
 		GetAxes(ViewRotation,X,Y,Z);
 		// Update view rotation.
 
-		if ( !bFixedCamera ) {
+		if (!bFixedCamera) {
 			aLookup  *= 0.24;
 			aTurn    *= 0.24;
 			ViewRotation.Yaw += UTPlus_AccumulatedPlayerTurn( 32.0 * DeltaTime * aTurn, UTPlus_AccumulatedHTurn);
@@ -699,10 +1271,10 @@ state GameEnded {
 		ViewShake(DeltaTime);
 		ViewFlash(DeltaTime);
 
-		if ( Role < ROLE_Authority ) // then save this move and replicate it
-			UTPlus_ReplicateMove(DeltaTime, vect(0,0,0), DODGE_None, rot(0,0,0));
-		else
-			ProcessMove(DeltaTime, vect(0,0,0), DODGE_None, rot(0,0,0));
+		ProcessMove(DeltaTime, vect(0,0,0), DODGE_None, rot(0,0,0));
+		if (Role < ROLE_Authority && bUpdating == false)
+			UTPlus_ReplicateInput(DeltaTime);
+
 		bPressedJump = false;
 	}
 }
@@ -877,6 +1449,7 @@ static function SetMultiSkin(Actor SkinActor, string SkinName, string FaceName, 
 
 defaultproperties {
 	UTPlus_RestartFireLockoutTime=0.3
+	UTPlus_TimeBetweenNetUpdates=0.006666666666666
 
 	bAlwaysRelevant=True
 
