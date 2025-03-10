@@ -40,6 +40,12 @@ var float UTPlus_DuckCollisionHeight;
 var float UTPlus_DuckCollisionRadius;
 var float UTPlus_DuckEyeHeight;
 
+var float      UTPlus_TPFix_OffsetZ;
+var vector     UTPlus_TPFix_Velocity;
+var rotator    UTPlus_TPFix_Rotation;
+var Teleporter UTPlus_TPFix_LastTouched;
+var string     UTPlus_TPFix_URL;
+
 struct ReplBuffer {
 	var int Data[20];
 };
@@ -182,6 +188,31 @@ simulated event Destroyed() {
 	if (bTraceInput && UTPlus_InputLogFile != none)
 		UTPlus_InputLogFile.StopLog();
 	super.Destroyed();
+}
+
+// Return true to override Teleporter
+simulated event bool PreTeleport(Teleporter T) {
+	local vector D;
+	D = Location - T.Location;
+	if (Region.Zone.IsA('TeleporterZone') == false &&
+		(
+			VSize(D * vect(1,1,0)) > CollisionRadius + T.CollisionRadius ||
+			Abs(D.Z) > CollisionHeight + T.CollisionHeight
+		)
+	) {
+		// Were not touching the teleporter just yet.
+		// Do nothing and
+		return true;
+	}
+
+	if (T.URL != "") {
+		UTPlus_TPFix_OffsetZ = Location.Z - T.Location.Z;
+		UTPlus_TPFix_Velocity = Velocity;
+		UTPlus_TPFix_Rotation = Rotation;
+		UTPlus_TPFix_LastTouched = T;
+		UTPlus_TPFix_URL = T.URL;
+	}
+	return false;
 }
 
 simulated event Touch(Actor Other) {
@@ -719,9 +750,11 @@ function UTPlus_PlayBackInput(UTPlusSavedInput Old, UTPlusSavedInput I) {
 
 	// 
 
+	UTPlus_TPFix_LastTouched = none;
 	HandleWalking();
 	PlayerMove(I.Delta);
 	AutonomousPhysics(I.Delta);
+	UTPlus_CorrectTeleporterVelocity();
 
 	I.SavedLocation = Location;
 	I.SavedVelocity = Velocity;
@@ -803,7 +836,9 @@ final function UTPlus_ReplicateInput(float DeltaTime) {
 		AdjustLocationOffset = vect(0,0,0);
 	}
 
+	UTPlus_TPFix_LastTouched = none;
 	AutonomousPhysics(DeltaTime);
+	UTPlus_CorrectTeleporterVelocity();
 
 	UTPlus_SavedInputChain.Add(DeltaTime, self);
 	if (bTraceInput && UTPlus_InputLogFile != none)
@@ -878,6 +913,62 @@ final function UTPlus_UpdateRotation(float DeltaTime, float maxPitch) {
 	SetRotation(NewRotation);
 }
 
+function UTPlus_CorrectTeleporterVelocity() {
+	local rotator Delta;
+	local Teleporter T;
+	local float Dist;
+	local Teleporter Best;
+	local float MinDist;
+
+	if (UTPlus_TPFix_LastTouched != none &&
+		(
+			UTPlus_TPFix_LastTouched.Class == class'Teleporter' ||
+			UTPlus_TPFix_LastTouched.Class == class'VisibleTeleporter'
+		)
+	) {
+		// only deal with base game teleporters
+		// other classes might do weird custom stuff
+
+		// find destination
+		foreach AllActors(class'Teleporter', T) {
+			if (string(T.Tag) ~= UTPlus_TPFix_URL) {
+				if (Best == none) {
+					Best = T;
+					MinDist = VSize(T.Location - Location);
+				} else {
+					Dist = VSize(T.Location - Location);
+					if (Dist < MinDist) {
+						MinDist = Dist;
+						Best = T;
+					}
+				}
+			}
+		}
+
+		if (Best == none) {
+			if (Level.NetMode == NM_Client) {
+				ClientMessage("Teleporter target could not be determined (bNoDelete not set to True?)");
+			} else {
+				ClientMessage("No teleporter found with tag '"$UTPlus_TPFix_URL$"'");
+			}
+			return;
+		}
+
+		Best.Disable('Touch');
+		MoveSmooth(vect(0,0,1)*UTPlus_TPFix_OffsetZ);
+		Best.Enable('Touch');
+
+		if (Best.bChangesVelocity) {
+			Velocity = Best.TargetVelocity;
+		} else {
+			Delta = rotator(UTPlus_TPFix_Velocity) - UTPlus_TPFix_Rotation;
+			// Teleporter doesnt change velocity, so we can do it ourselves
+			Velocity = vector(Rotation+Delta) * VSize(UTPlus_TPFix_Velocity*vect(1,1,0)) * vect(1,1,0);
+			Velocity.Z = UTPlus_TPFix_Velocity.Z;
+		}
+	}
+}
+
 final function UTPlus_MoveAutonomous(
 	float DeltaTime,
 	bool NewbRun,
@@ -887,9 +978,9 @@ final function UTPlus_MoveAutonomous(
 	vector newAccel,
 	rotator DeltaRot
 ) {
-	//IGPlus_TPFix_LastTouched = none;
+	UTPlus_TPFix_LastTouched = none;
 	MoveAutonomous(DeltaTime, NewbRun, NewbDuck, NewbPressedJump, DodgeMove, newAccel, DeltaRot);
-	//CorrectTeleporterVelocity();
+	UTPlus_CorrectTeleporterVelocity();
 }
 
 /**
