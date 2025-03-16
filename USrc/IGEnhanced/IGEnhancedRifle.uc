@@ -98,27 +98,29 @@ simulated function bool ClientAltFire(float V) {
 function TraceFire( float Accuracy ) {
 	local vector HitLocation, HitNormal, StartTrace, EndTrace, X,Y,Z;
 	local actor Other;
+	local Pawn PawnOwner;
 
-	Owner.MakeNoise(Pawn(Owner).SoundDampening);
-	GetAxes(Pawn(owner).ViewRotation,X,Y,Z);
-	StartTrace = Owner.Location + vect(0,0,1) * Pawn(Owner).EyeHeight;
+	PawnOwner = Pawn(Owner);
+	Owner.MakeNoise(PawnOwner.SoundDampening);
+	GetAxes(PawnOwner.ViewRotation,X,Y,Z);
+	StartTrace = Owner.Location + vect(0,0,1) * PawnOwner.EyeHeight;
 	EndTrace = StartTrace + Accuracy * (FRand() - 0.5 )* Y * 1000
 		+ Accuracy * (FRand() - 0.5 ) * Z * 1000 ;
 
-	if (bBotSpecialMove && (Tracked != None) &&
+	if (bBotSpecialMove && (Tracked != none) &&
 		(((Owner.Acceleration == vect(0,0,0)) && (VSize(Owner.Velocity) < 40)) ||
-			(Normal(Owner.Velocity) Dot Normal(Tracked.Velocity) > 0.95))
+			(Normal(Owner.Velocity) dot Normal(Tracked.Velocity) > 0.95))
 	) {
 		EndTrace += 10000 * Normal(Tracked.Location - StartTrace);
 	} else {
-		AdjustedAim = pawn(owner).AdjustAim(1000000, StartTrace, 2.75*AimError, False, False);	
+		AdjustedAim = PawnOwner.AdjustAim(1000000, StartTrace, 2.75*AimError, false, false);	
 		EndTrace += (10000 * vector(AdjustedAim)); 
 	}
 
-	Tracked = None;
+	Tracked = none;
 	bBotSpecialMove = false;
 
-	Other = Pawn(Owner).TraceShot(HitLocation,HitNormal,EndTrace,StartTrace);
+	Other = PawnOwner.TraceShot(HitLocation,HitNormal,EndTrace,StartTrace);
 	ProcessTraceHit(Other, HitLocation, HitNormal, vector(AdjustedAim),Y,Z);
 }
 
@@ -136,7 +138,7 @@ function ProcessTraceHit(
 	local vector SourceLocation;
 	local vector TargetOffset;
 
-	if (Other == None) {
+	if (Other == none) {
 		HitNormal = -X;
 		HitLocation = Owner.Location + X*10000.0;
 	}
@@ -167,15 +169,8 @@ function ProcessTraceHit(
 	Smoke = Spawn(class'SuperShockBeam');
 	Smoke.RemoteRole = ROLE_None;
 
-	if ((Other != self) && (Other != Owner) && (Other != None)) 
+	if ((Other != self) && (Other != Owner) && (Other != none)) 
 		Other.TakeDamage(HitDamage, Pawn(Owner), HitLocation, 60000.0*X, MyDamageType);
-}
-
-function SpawnEffect(vector HitLocation, vector SmokeLocation)
-{
-	local SuperShockBeam Smoke;
-	Smoke = Spawn(class'SuperShockBeam');
-	Smoke.RemoteRole = ROLE_None;
 }
 
 // Use PlayAnim instead of LoopAnim to avoid inconsistent reload times,

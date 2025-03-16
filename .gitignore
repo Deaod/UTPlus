@@ -1,8 +1,6 @@
-/Classes/VersionInfo.uc
+/System/*.u*
+/Build/Temp/**/*
+/Classes/*
 
 *.sublime-workspace
 PostBuildHook.bat
-
-/Build/Temp/**/*
-/System/**/*.u
-/System/**/*.uz

@@ -98,11 +98,6 @@ set BUILD_BYTEHAX=0
 set VERBOSE=0
 
 :ParseArgs
-    if /I "%1" EQU "BuildDir" (
-        set BUILD_DIR=%~f2
-        shift /1
-    )
-
     if /I "%1" EQU "NoInt"    ( set BUILD_NOINT=1 )
     if /I "%1" EQU "NoUz"     ( set BUILD_NOUZ=1 )
 
@@ -111,6 +106,11 @@ set VERBOSE=0
     if /I "%1" EQU "ByteHax"  ( set BUILD_BYTEHAX=1 )
 
     if /I "%1" EQU "Verbose"  ( set /A VERBOSE+=1 )
+
+    if /I "%1" EQU "BuildDir" (
+        set BUILD_DIR=%~f2
+        shift /1
+    )
     
     shift /1
     if [%1] NEQ [] goto ParseArgs
@@ -142,6 +142,8 @@ pushd "%BUILD_DIR%..\System"
 set MAKEINI="%BUILD_TEMP%make.ini"
 call :GenerateMakeIni %MAKEINI% %DEPENDENCIES% %PACKAGE_NAME%
 call :PrepareDependencies %DEPENDENCIES%
+call :PrepareUnrealscriptSource
+if ERRORLEVEL 1 goto compile_failed
 
 :: make sure to always rebuild the package
 :: New package GUID, No doubts about staleness
@@ -301,3 +303,20 @@ exit /B %ERRORLEVEL%
     goto PrepareDependencies
 exit /B %ERRORLEVEL%
 
+:PrepareUnrealscriptSource
+if not exist "%BUILD_DIR%Classes" mkdir "%BUILD_DIR%Classes"
+
+for /f "delims=" %%f in ('dir "%BUILD_DIR%Classes\*" /b') do (
+    if [%%f] NEQ [VersionInfo.uc] (
+        del "%BUILD_DIR%Classes\%%f" >NUL
+    )
+)
+
+for /f "delims=" %%f in ('dir "%BUILD_DIR%USrc\*" /a:-d /s /b') do (
+    if EXIST "%BUILD_DIR%Classes\%%~nxf" (
+        echo ERROR: %BUILD_DIR%Classes\%%~nxf already exists
+        exit /B 1
+    )
+    copy /-Y "%%f" /B "%BUILD_DIR%Classes" /B >NUL
+)
+exit /B %ERRORLEVEL%
