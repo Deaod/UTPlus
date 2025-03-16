@@ -54,7 +54,6 @@ var UTPlusInputLogFile UTPlus_InputLogFile;
 var bool bTraceInput;
 
 var float UTPlus_DuckFraction;
-var float UTPlus_DuckTransitionTime;
 var float UTPlus_DuckCollisionHeight;
 var float UTPlus_DuckCollisionRadius;
 var float UTPlus_DuckEyeHeight;
@@ -67,6 +66,8 @@ var string     UTPlus_TPFix_URL;
 
 const UTPlus_MaxJitterTime = 0.05;
 const UTPlus_TimeBetweenNetUpdates = 0.00666666666666;
+const UTPlus_DuckStartTransitionTime = 0.25;
+const UTPlus_DuckEndTransitionTime = 0.1;
 
 replication {
 	unreliable if (Role < ROLE_Authority)
@@ -890,17 +891,17 @@ final function UTPlus_ProcessDuck(float DeltaTime) {
 		return;
 
 	DuckDelta = UTPlus_DuckFraction;
-	if (bIsCrouching) {
-		UTPlus_DuckFraction = FClamp(UTPlus_DuckFraction + DeltaTime/UTPlus_DuckTransitionTime, 0.0, 1.0);
-	} else {
-		UTPlus_DuckFraction = FClamp(UTPlus_DuckFraction - DeltaTime/UTPlus_DuckTransitionTime, 0.0, 1.0);
-	}
+	if (bIsCrouching)
+		UTPlus_DuckFraction = FClamp(UTPlus_DuckFraction + DeltaTime/UTPlus_DuckStartTransitionTime, 0.0, 1.0);
+	else
+		UTPlus_DuckFraction = FClamp(UTPlus_DuckFraction - DeltaTime/UTPlus_DuckEndTransitionTime, 0.0, 1.0);
 	DuckDelta -= UTPlus_DuckFraction;
 
 	if (DuckDelta == 0.0)
 		return;
 
 	BaseEyeHeight = Lerp(UTPlus_DuckFraction, default.BaseEyeHeight, UTPlus_DuckEyeHeight);
+	PrePivot = Lerp(UTPlus_DuckFraction, 0, default.CollisionHeight - UTPlus_DuckCollisionHeight) * vect(0,0,1);
 
 	if (bIsCrouching == false)
 		MoveSmooth(DuckDelta * (default.CollisionHeight - UTPlus_DuckCollisionHeight) * vect(0,0,1));
@@ -1690,7 +1691,6 @@ static function SetMultiSkin(Actor SkinActor, string SkinName, string FaceName, 
 
 defaultproperties {
 	UTPlus_RestartFireLockoutTime=0.3
-	UTPlus_DuckTransitionTime=0.25
 	UTPlus_DuckCollisionHeight=25.0
 	UTPlus_DuckCollisionRadius=17.0
 	UTPlus_DuckEyeHeight=14.0
