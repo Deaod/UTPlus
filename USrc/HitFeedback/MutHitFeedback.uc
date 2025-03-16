@@ -4,7 +4,22 @@ class MutHitFeedback extends Mutator;
 var HitFeedbackChannel ChannelList;
 
 event PostBeginPlay() {
+	if (Level == none || Level.Game == none) {
+		Destroy(); // spawned client-side? wtf?
+		return;
+	}
+
+	if (Level.Game.BaseMutator == none)
+		Level.Game.BaseMutator = self;
+	else
+		Level.Game.BaseMutator.AddMutator(self);
+
 	Level.Game.RegisterDamageMutator(self);
+}
+
+function AddMutator(Mutator M) {
+	if (M.Class != Class)
+		super.AddMutator(M);
 }
 
 function HitFeedbackChannel FindChannel(Pawn P) {
