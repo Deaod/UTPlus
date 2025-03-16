@@ -77,8 +77,8 @@ function Timer() {
 
 	// Complexity: O(n) = n*n (!)
 	// Maybe find something better?
-	for (P = Level.PawnList, P != none; P = P.NextPawn)
-		if (P.IsA('PlayerPawn') && FindChannel(P) == false)
+	for (P = Level.PawnList; P != none; P = P.NextPawn)
+		if (P.IsA('PlayerPawn') && FindChannel(P) == none)
 			CreateChannel(P);
 }
 
