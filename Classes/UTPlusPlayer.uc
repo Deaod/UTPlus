@@ -30,9 +30,21 @@ var float UTPlus_RestartFireLockoutTime;
 var UTPlusSavedInputChain UTPlus_SavedInputChain;
 var UTPlusDataBuffer UTPlus_InputReplicationBuffer;
 var float UTPlus_LastInputSendTime;
-var float UTPlus_TimeBetweenNetUpdates;
+var float UTPlus_ServerDeltaTime;
 var bool UTPlus_UpdateClient;
 var bool UTPlus_PressedJumpSave;
+
+var bool UTPlus_ExtrapolatedLastUpdate;
+var float UTPlus_ExtrapolationDelta;
+struct UTPlus_ExtrapolationSavedData {
+	var() vector Location;
+	var() vector Velocity;
+	var() vector Acceleration;
+	var() name State;
+	var() EPhysics Physics;
+	var() EDodgeDir DodgeDir;
+};
+var UTPlus_ExtrapolationSavedData UTPlus_ExtrapolationSaved;
 
 struct ReplBuffer {
 	var int Data[20];
@@ -52,6 +64,9 @@ var vector     UTPlus_TPFix_Velocity;
 var rotator    UTPlus_TPFix_Rotation;
 var Teleporter UTPlus_TPFix_LastTouched;
 var string     UTPlus_TPFix_URL;
+
+const UTPlus_MaxJitterTime = 0.05;
+const UTPlus_TimeBetweenNetUpdates = 0.00666666666666;
 
 replication {
 	unreliable if (Role < ROLE_Authority)
@@ -592,7 +607,6 @@ final function UTPlus_ServerApplyInput(float RefTimeStamp, int NumBits, ReplBuff
 	local UTPlusSavedInput Node;
 	local UTPlusSavedInput Old;
 	local float DeltaTime;
-	local float ServerDeltaTime;
 	local float LostTime;
 
 	if (Role < ROLE_Authority) {
@@ -608,8 +622,8 @@ final function UTPlus_ServerApplyInput(float RefTimeStamp, int NumBits, ReplBuff
 	for (i = 0; i < arraycount(B.Data); i++)
 		UTPlus_InputReplicationBuffer.BitsData[i] = B.Data[i];
 
-	// if (Level.Pauser == "")
-	// 	UndoExtrapolation();
+	if (Level.Pauser == "")
+	 	UTPlus_ExtrapolationUndo();
 
 	Old = UTPlus_SavedInputChain.Newest;
 	if (Old == none) {
@@ -633,15 +647,31 @@ final function UTPlus_ServerApplyInput(float RefTimeStamp, int NumBits, ReplBuff
 	DeltaTime        = UTPlus_SavedInputChain.Newest.TimeStamp - CurrentTimeStamp;
 	CurrentTimeStamp = UTPlus_SavedInputChain.Newest.TimeStamp;
 
-	if (ServerTimeStamp != 0.0) {
-		ServerDeltaTime = Level.TimeSeconds - ServerTimeStamp;
-		ServerTimeStamp = Level.TimeSeconds;
-
-		//ExtrapolationDelta += (ServerDeltaTime - DeltaTime);
-	} else {
-		ServerTimeStamp = Level.TimeSeconds;
-		//ExtrapolationDelta = 0.0;
+	// do not allow clients to simulate significantly more time than the server
+	if (ServerTimeStamp > 0.0) {
+		// allow 1% error
+		TimeMargin = FMax(0.0, TimeMargin + DeltaTime - 1.01 * UTPlus_ServerDeltaTime);
+		if (TimeMargin > MaxTimeMargin) {
+			// player is too far ahead
+			TimeMargin -= DeltaTime;
+			if (TimeMargin < 0.5)
+				MaxTimeMargin = default.MaxTimeMargin;
+			else
+				MaxTimeMargin = 0.5;
+			DeltaTime = 0.0;
+		}
 	}
+
+	if (ServerTimeStamp == 0.0)
+		UTPlus_ExtrapolationDelta = 0.0;
+	else
+		UTPlus_ExtrapolationDelta += (UTPlus_ServerDeltaTime - DeltaTime);
+	ServerTimeStamp = Level.TimeSeconds;
+	UTPlus_ServerDeltaTime = 0.0;
+
+	// remove inputs that are too old
+	UTPlus_SavedInputChain.RemoveOutdatedNodes(CurrentTimeStamp + UTPlus_ExtrapolationDelta - UTPlus_MaxJitterTime);
+	Old = UTPlus_SavedInputChain.Oldest;
 
 	// simulate lost time to match extrapolation done by all clients
 	LostTime = RefTimeStamp - Old.TimeStamp; // typically <= 0
@@ -780,9 +810,77 @@ final function UTPlus_UpdatePing(float Ping) {
 }
 
 final function ServerTick(float DeltaTime) {
+	UTPlus_ServerDeltaTime += DeltaTime;
+
 	if (UTPlus_UpdateClient)
 		UTPlus_SendCAP();
 	UTPlus_UpdateClient = false;
+
+	UTPlus_ExtrapolationCheck(DeltaTime);
+}
+
+final function UTPlus_ExtrapolationSaveData() {
+	UTPlus_ExtrapolationSaved.Location = Location;
+	UTPlus_ExtrapolationSaved.Velocity = Velocity;
+	UTPlus_ExtrapolationSaved.Acceleration = Acceleration;
+	UTPlus_ExtrapolationSaved.State = GetStateName();
+	UTPlus_ExtrapolationSaved.Physics = Physics;
+	UTPlus_ExtrapolationSaved.DodgeDir = DodgeDir;
+}
+
+function UTPlus_ExtrapolationRestoreData() {
+	local vector OldLoc;
+	local Decoration Carried;
+
+	if (FastTrace(UTPlus_ExtrapolationSaved.Location)) {
+		MoveSmooth(UTPlus_ExtrapolationSaved.Location - Location);
+	} else {
+		Carried = CarriedDecoration;
+		OldLoc = Location;
+
+		bCanTeleport = false;
+		SetLocation(UTPlus_ExtrapolationSaved.Location);
+		bCanTeleport = true;
+
+		if (Carried != None) {
+			CarriedDecoration = Carried;
+			CarriedDecoration.SetLocation(UTPlus_ExtrapolationSaved.Location + CarriedDecoration.Location - OldLoc);
+			CarriedDecoration.SetPhysics(PHYS_None);
+			CarriedDecoration.SetBase(self);
+		}
+	}
+	Velocity = UTPlus_ExtrapolationSaved.Velocity;
+	Acceleration = UTPlus_ExtrapolationSaved.Acceleration;
+	if (UTPlus_ExtrapolationSaved.State == GetStateName()) {
+		SetPhysics(UTPlus_ExtrapolationSaved.Physics);
+		DodgeDir = UTPlus_ExtrapolationSaved.DodgeDir;
+	}
+}
+
+function UTPlus_ExtrapolationDiscardData() {
+	UTPlus_ExtrapolatedLastUpdate = false;
+}
+
+function UTPlus_ExtrapolationUndo() {
+	if (UTPlus_ExtrapolatedLastUpdate) {
+		UTPlus_ExtrapolatedLastUpdate = false;
+
+		UTPlus_ExtrapolationRestoreData();
+	}
+}
+
+final function UTPlus_ExtrapolationCheck(float DeltaTime) {
+	if (Level.Pauser == "" &&
+		MutUTPlus.GameEventChain.IsPlaying() &&
+		Level.TimeSeconds > MutUTPlus.GameEventChain.Newest.TimeStamp
+	) {
+		if (UTPlus_ExtrapolatedLastUpdate == false && UTPlus_ExtrapolationDelta > 0.01) {
+			UTPlus_ExtrapolatedLastUpdate = true;
+			UTPlus_ExtrapolationSaveData();
+			UTPlus_SimMoveAutonomous(UTPlus_ExtrapolationDelta);
+		}
+		UTPlus_ExtrapolationDelta *= Exp(-2.0 * DeltaTime);
+	}
 }
 
 final function UTPlus_ProcessDuck(float DeltaTime) {
@@ -1592,7 +1690,6 @@ static function SetMultiSkin(Actor SkinActor, string SkinName, string FaceName, 
 
 defaultproperties {
 	UTPlus_RestartFireLockoutTime=0.3
-	UTPlus_TimeBetweenNetUpdates=0.006666666666666
 	UTPlus_DuckTransitionTime=0.25
 	UTPlus_DuckCollisionHeight=25.0
 	UTPlus_DuckCollisionRadius=17.0
