@@ -15,6 +15,8 @@ event PostBeginPlay() {
 		Level.Game.BaseMutator.AddMutator(self);
 
 	Level.Game.RegisterDamageMutator(self);
+
+	SetTimer(0.5, true);
 }
 
 function AddMutator(Mutator M) {
@@ -68,32 +70,47 @@ function ModifyPlayer(Pawn P) {
 
 	if (FindTracker(P) == none)
 		CreateTracker(P);
+}
 
-	if (FindChannel(P) == none)
-		CreateChannel(P);
+function Timer() {
+	local Pawn P;
+
+	// Complexity: O(n) = n*n (!)
+	// Maybe find something better?
+	for (P = Level.PawnList, P != none; P = P.NextPawn)
+		if (P.IsA('PlayerPawn') && FindChannel(P) == false)
+			CreateChannel(P);
 }
 
 function MutatorTakeDamage(
 	out int ActualDamage,
 	Pawn Victim,
 	Pawn InstigatedBy,
-	out Vector HitLocation,
-	out Vector Momentum,
+	out vector HitLocation,
+	out vector Momentum,
 	name DamageType
 ) {
 	local int TotalDamage;
 	local HitFeedbackTracker Tracker;
 	local HitFeedbackChannel Channel;
+	local Actor VT;
 
-	if (Victim != none)
+	if (InstigatedBy != none && Victim != none) {
 		Tracker = FindTracker(Victim);
-	if (Tracker != none)
-		TotalDamage = Tracker.LastDamage;
+		if (Tracker != none)
+			TotalDamage = Tracker.LastDamage;
 
-	if (InstigatedBy != none)
-		Channel = FindChannel(InstigatedBy);
-	if (Channel != none)
-		Channel.PlayHitFeedback(Victim.PlayerReplicationInfo, TotalDamage);
+		for (Channel = ChannelList; Channel != none; Channel = Channel.Next) {
+			if (Channel.PlayerOwner == none)
+				continue;
+
+			VT = Channel.PlayerOwner.ViewTarget;
+			if (VT == none)
+				VT = Channel.PlayerOwner;
+			if (VT == InstigatedBy)
+				Channel.PlayHitFeedback(Victim.PlayerReplicationInfo, TotalDamage);
+		}
+	}
 
 	super.MutatorTakeDamage(ActualDamage, Victim, InstigatedBy, HitLocation, Momentum, DamageType);
 }
