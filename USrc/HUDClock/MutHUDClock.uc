@@ -86,8 +86,6 @@ simulated function DrawTime(ChallengeHUD H, Canvas C) {
 		XL = 0;
 
 	C.Style = H.Style;
-	if (H.Opacity > 8 || H.Level.bHighDetailMode == false)
-		C.Style = ERenderStyle.STY_Normal;
 	C.DrawColor = H.HUDColor;
 
 	if (H.bHideStatus) {
@@ -107,8 +105,6 @@ simulated function DrawTime(ChallengeHUD H, Canvas C) {
 	C.DrawTile(Texture'HUDClockBackground', 128*H.Scale + XL*H.Scale, 64*H.Scale, 0, 0, 128.0, 64.0);
 
 	C.Style = H.Style;
-	if (H.Opacity > 8 || H.Level.bHighDetailMode == false)
-		C.Style = ERenderStyle.STY_Normal;
 	C.DrawColor = H.WhiteColor;
 
 	FullSize = CharXScaled * 4 + 12 * H.Scale; //At least 4 digits and : (extra size not counted)
