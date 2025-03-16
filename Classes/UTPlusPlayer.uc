@@ -254,7 +254,7 @@ function actor TraceShot(out vector HitLocation, out vector HitNormal, vector En
 	foreach TraceActors( class'Actor', A, HitLocation, HitNormal, EndTrace, StartTrace) {
 		if (A.IsA('UTPlusDummy')) {
 			D = UTPlusDummy(A);
-			if ((D.Actual != self) && D.AdjustHitLocation(HitLocation, EndTrace - StartTrace)) {
+			if ((D.Actual != self)) {
 				Other = D.Actual;
 				break;
 			}
