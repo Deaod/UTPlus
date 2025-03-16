@@ -66,37 +66,20 @@ simulated final function Sound GetTeamHitSound() {
 	return PlayedTeamHitSound;
 }
 
-simulated final function PlaySoundWithPitch469(Sound S, float Volume, optional byte Priority, optional float Pitch) {
-	local string TSP;
+simulated final function PlaySoundWithPitch(Sound S, float Volume, optional byte Priority, optional float Pitch) {
+	local byte TSP;
 
-	TSP = PlayerOwner.GetPropertyText("TransientSoundPriority");
-	PlayerOwner.SetPropertyText("TransientSoundPriority", string(Priority));
+	Volume = FClamp(Volume, 0.0, 6.0);
+
+	TSP = PlayerOwner.TransientSoundPriority;
+	PlayerOwner.TransientSoundPriority = Priority;
 
 	while (Volume > 0.0) {
 		PlayerOwner.PlaySound(S, SLOT_None, FMin(1.0, Volume), false, , Pitch);
 		Volume -= FMin(1.0, Volume);
 	}
 
-	PlayerOwner.SetPropertyText("TransientSoundPriority", TSP);
-}
-
-simulated final function PlaySoundWithPitch436(Sound S, float Volume, optional byte Priority, optional float Pitch) {
-	while (Volume > 0.0) {
-		PlayerOwner.PlaySound(S, SLOT_None, float(Priority), false, , Pitch);
-		Volume -= 1.0;
-	}
-}
-
-simulated final function PlaySoundWithPitch(Sound S, float Volume, optional byte Priority, optional float Pitch) {
-	Volume = FClamp(Volume, 0.0, 6.0);
-
-	if (int(Level.EngineVersion) >= 469) {
-		// >=469
-		PlaySoundWithPitch469(S, Volume, Priority, Pitch);
-	} else {
-		// <469
-		PlaySoundWithPitch436(S, Volume, Priority, Pitch);
-	}
+	PlayerOwner.TransientSoundPriority = TSP;
 }
 
 simulated final function PlayHitSound(float Damage, int OwnTeam, int EnemyTeam) {

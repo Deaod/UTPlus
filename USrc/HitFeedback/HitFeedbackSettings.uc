@@ -5,7 +5,7 @@ class HitFeedbackSettings extends Object
 #exec Audio Import FILE=Sounds\HitSound1.wav Name=HitSound1
 #exec Audio Import FILE=Sounds\HitSoundFriendly.wav Name=HitSoundFriendly
 
-var config string HitSounds[16];
+var config array<string> HitSounds;
 
 var config bool bEnableHitSounds;
 var config int SelectedHitSound;
@@ -23,7 +23,7 @@ function Initialize() {
 
 	PackageName = class'StringUtils'.static.GetPackage();
 
-	for (i = 0; i < arraycount(HitSounds); i++) {
+	for (i = 0; i < HitSounds.Length; i++) {
 		if (Left(HitSounds[i], 6) ~= "UTPlus") {
 			HitSounds[i] = PackageName$Mid(HitSounds[i], InStr(HitSounds[i], "."));
 		}
@@ -36,9 +36,9 @@ function Initialize() {
 }
 
 defaultproperties {
-	HitSounds(0)="UTPlus.HitSoundFriendly"
-	HitSounds(1)="UTPlus.HitSound"
-	HitSounds(2)="UTPlus.HitSound1"
+	HitSounds="UTPlus.HitSoundFriendly"
+	HitSounds="UTPlus.HitSound"
+	HitSounds="UTPlus.HitSound1"
 
 	bEnableHitSounds=True
 	SelectedHitSound=1
